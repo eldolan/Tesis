@@ -3,11 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi App Flask en Azure</title>
+    <title>Panel de Control</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+<header>
+        <nav>
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Logo" class="logo">
+            </div>
+            <div class="nav-links">
+                <a href="#" class="nav-text">Inicio</a>
+                <a href="#" class="nav-text">Riego</a>
+                <a href="#" class="nav-text">Fertilizante</a>
+                <a href="#" class="nav-text">Contacto</a>
+            </div>
+            <div class="user-container">
+                <img src="{{ url_for('static', filename='images/bell.svg') }}" alt="Notificaciones" class="bell-icon">
+                <img src="{{ url_for('static', filename='images/user.svg') }}" alt="Usuario" class="user-icon">
+            </div> 
+        </nav>
+</header>
 <body>
-    <h1>¡Hola, Mundo desde Flask y Azure!</h1>
-    <p>Tu aplicación se ha desplegado correctamente.</p>
+    <div class="body">
+        <div class="hero">
+            <section class="contenido">
+                <div class="resumen">
+                    <div class="resumen-t">
+                        <h2>Temperatura</h2>
+                        <p>25°C</p>
+                    </div>
+                    <div class="resumen-h">
+                        <h2>Humedad</h2>
+                        <p>60%</p>
+                    </div>
+                    <div class="resumen-hs">
+                        <h2>Humedad del Suelo</h2>
+                        <p>30%</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 </body>
 </html>
