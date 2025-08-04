@@ -6,11 +6,16 @@
     <title>Panel de Control</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/logo.svg') }}">
 </head>
+<body>
 <header>
-    <button id="abrir-menu" onclick="abrirSidebar()" aria-label="Abrir Menú" aria-expanded="false" aria-controls="navbar">
-        <img src="{{ url_for('static', filename='images/menu.svg') }}" alt="Abrir menú">
-    </button>
+    <div class="container-movil">
+        <h1 id="titulo-nav">Panel de Control</h1>
+        <button id="abrir-menu" onclick="abrirSidebar()" aria-label="Abrir Menú" aria-expanded="false" aria-controls="navbar">
+            <img src="{{ url_for('static', filename='images/menu.svg') }}" alt="Abrir menú">
+        </button>
+    </div>
         <nav id="navbar">
             <ul>
                 <li id="espaciado-cerrar">
@@ -41,9 +46,20 @@
     <div id="overlay" onclick="closeSidebar()" aria-hidden="true"></div>
 </header>
 <main>
-    <body>
-        <div class="body">
+    <div class="grid-container">
+        <div class="box" style="grid-area: box1;">
+            <h1>Resumen</h1>
         </div>
-    </body>
+        <div class="box" style="grid-area: box2;">
+            <h2>Grafico riego</h2>
+        </div>
+        <div class="box" style="grid-area: box3;">
+            <h2>Grafico fertilizante</h2>
+        </div>
+        <div class="box" style="grid-area: box4;">
+            <h2>Recomendacion y estado del suelo</h2>
+        </div>
+    </div>
 </main>
+</body>
 </html>
