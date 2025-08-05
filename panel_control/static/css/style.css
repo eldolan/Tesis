@@ -9,6 +9,17 @@
     --accent-color: #0071FF;
     --hover-color: #272832;
 }
+
+button {
+  background: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
 *{
     margin: 0;
     padding: 0;
@@ -177,8 +188,9 @@ nav a.active-link{
 
 .grid-container {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 200px 200px 200px 200px;
+    grid-template-columns: repeat(3, 1fr);
+    height: calc(100vh - 16em);
+    grid-template-rows: 1fr 2fr;
     gap: 1em;
     grid-template-areas: 
     "box1 box1 box1"
@@ -244,4 +256,123 @@ nav a.active-link{
         "box3 box3"
         "box4 box4";
     }
+}
+form:has(div.user-box) {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+}
+.login-box {
+    width: 33%;
+    height: 100%;
+    background: #0505053f;
+    box-sizing: border-box;
+    border-radius: 0.8em;
+}
+
+.login-box .user-box {
+  position: relative;
+}
+
+.login-box .user-box input {
+  width: 100%;
+  margin-bottom: auto;
+  padding: 0.5em 0;
+  font-size: 1rem;
+  color: #fff;
+  border: none;
+  border-bottom: 1px solid #fff;
+  outline: none;
+  background: transparent;
+}
+
+.login-box .user-box label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.8em 0;
+  font-size: 1rem;
+  color: #fff;
+  pointer-events: none;
+  transition: .5s;
+}
+
+.login-box .user-box input:focus ~ label,
+.login-box .user-box input:valid ~ label {
+  top: -1.5em;
+  left: 0;
+  color: #bdb8b8;
+  font-size: 0.8rem;
+}
+
+.login-box form button {
+  padding: 0.5em 1em;
+  color: #ffffff;
+  font-size: 1rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  overflow: hidden;
+  transition: .5s;
+  letter-spacing: 0.2em;
+  border: 1px solid var(--hover-color);
+  margin-top: 1em;
+}
+
+.login-box form button:hover {
+  background: var(--hover-color);
+}
+
+.weather-results {
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1em;
+    gap: 0.5em;
+}
+
+.weather-results h1, .weather-results h2, .weather-results h3 {
+    margin: 0;
+}
+
+.weather-results .weather-title {
+    font-size: 1.5rem;
+}
+
+.weather-results .weather-description {
+    text-transform: capitalize;
+    color: #bdb8b8;
+}
+
+.weather-results .weather-temp {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+.weather-results p {
+    font-size: 1rem;
+    margin: 0.2em 0;
+}
+
+#search-again-btn {
+  padding: 0.5em 1em;
+  color: #ffffff;
+  font-size: 1rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  overflow: hidden;
+  transition: .5s;
+  letter-spacing: 0.2em;
+  border: 1px solid var(--hover-color);
+  margin-top: 1em;
+}
+
+#search-again-btn:hover {
+  background: var(--hover-color);
 }

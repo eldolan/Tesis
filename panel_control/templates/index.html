@@ -47,8 +47,18 @@
 </header>
 <main>
     <div class="grid-container">
-        <div class="box" style="grid-area: box1;">
-            <h1>Resumen</h1>
+        <div class="box" style="grid-area: box1; padding: 1em;">
+            <div id="weather-container" class="login-box">
+                <form id="weather-form" action="/get_weather" method="POST">
+                    <div class="user-box">
+                        <input type="text" id="city" name="city" required>
+                        <label>Ingresar Ciudad:</label>
+                    </div>
+                    <button type="submit">
+                        Seleccionar
+                    </button>
+                </form>
+            </div>
         </div>
         <div class="box" style="grid-area: box2;">
             <h2>Grafico riego</h2>
