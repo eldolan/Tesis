@@ -181,7 +181,7 @@ nav a.active-link{
     z-index: 9;
     display: none;
 }
-
+/*grid*/
 .box{
     border: 2px solid var(--hover-color);
 }
@@ -198,65 +198,6 @@ nav a.active-link{
     "box2 box3 box4";
 }
 
-@media screen and (max-width: 750px) {
-    #abrir-menu, #cerrar-menu {
-        display: block;
-    }
-    #logo-inicio {
-        margin-right: 0;
-    }
-    #espaciado-campana {
-        margin-left: 0;
-    }
-    #espaciado-cerrar {
-        margin-right: auto;
-    }
-    #titulo-nav {
-        display: inline-block;
-    }
-    nav {
-        position: fixed;
-        top: 0;
-        right: -100%;
-        height: 100vh;
-        width: min(15em, 100%);
-        z-index: 10;
-        border-left: 1px solid var(--hover-color);
-        transition: right 0.3s ease-in-out;
-     }
-    nav.show {
-        right: 0;
-     }
-    
-    nav.show ~ #overlay {
-        display: block;
-     }
-    nav ul{
-        width: 100%;
-        flex-direction: column;
-     }
-    nav a {
-        width: 100%;
-        padding-left: -2.5em;
-     }
-     nav .logo {
-        padding: 0 1.5em;
-        margin: 1em;
-     }
-     .grid-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: repeat(6, 6em);
-        gap: 1em;
-        grid-template-areas: 
-        "box1 box1"
-        "box2 box2"
-        "box2 box2"
-        "box3 box3"
-        "box3 box3"
-        "box4 box4";
-    }
-}
 form:has(div.user-box) {
     height: 100%;
     display: flex;
@@ -307,17 +248,15 @@ form:has(div.user-box) {
   font-size: 0.8rem;
 }
 
-.login-box form button {
+.login-box form button, #search-again-btn {
   padding: 0.5em 1em;
   color: #ffffff;
-  font-size: 1rem;
+  font-size: 1em;
   text-decoration: none;
   text-transform: uppercase;
-  overflow: hidden;
   transition: .5s;
   letter-spacing: 0.2em;
   border: 1px solid var(--hover-color);
-  margin-top: 1em;
 }
 
 .login-box form button:hover {
@@ -326,7 +265,7 @@ form:has(div.user-box) {
 
 .weather-results {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -360,19 +299,93 @@ form:has(div.user-box) {
     margin: 0.2em 0;
 }
 
-#search-again-btn {
-  padding: 0.5em 1em;
-  color: #ffffff;
-  font-size: 1rem;
-  text-decoration: none;
-  text-transform: uppercase;
-  overflow: hidden;
-  transition: .5s;
-  letter-spacing: 0.2em;
-  border: 1px solid var(--hover-color);
-  margin-top: 1em;
-}
-
 #search-again-btn:hover {
   background: var(--hover-color);
+}
+
+@media screen and (max-width: 750px) {
+    #abrir-menu, #cerrar-menu {
+        display: block;
+    }
+    #logo-inicio {
+        margin-right: 0;
+    }
+    #espaciado-campana {
+        margin-left: 0;
+    }
+    #espaciado-cerrar {
+        margin-right: auto;
+    }
+    #titulo-nav {
+        display: inline-block;
+    }
+    nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        height: 100vh;
+        width: min(15em, 100%);
+        z-index: 10;
+        border-left: 1px solid var(--hover-color);
+        transition: right 0.3s ease-in-out;
+     }
+    nav.show {
+        right: 0;
+     }
+    
+    nav.show ~ #overlay {
+        display: block;
+     }
+    nav ul{
+        width: 100%;
+        flex-direction: column;
+     }
+    nav a {
+        width: 100%;
+        padding-left: -2.5em;
+     }
+     nav .logo {
+        padding: 0 1.5em;
+        margin: 1em;
+     }
+     .grid-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        gap: 1em;
+        height: auto;
+        grid-template-areas: 
+        "box1 "
+        "box2 "
+        "box3 "
+        "box4 ";
+    }
+    .login-box {
+        width: 100%;
+        min-height: 250px;
+    }
+    .weather-results {
+        width: 100%;
+        min-height: 250px;
+    }
+    .weather-results .weather-title {
+        font-size: 1.3rem;
+    }
+    .weather-results .weather-temp {
+        font-size: 2.2rem;
+    }
+}
+@media screen and (max-width: 375px) {
+    .login-box, .weather-results {
+        width: 100%;
+    }
+    .weather-results .weather-title {
+        font-size: 1.2rem;
+    }
+    .weather-results .weather-temp {
+        font-size: 2rem;
+    }
+    .weather-results p {
+        font-size: 0.9rem;
+    }
 }
