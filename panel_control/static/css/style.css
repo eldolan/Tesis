@@ -181,9 +181,12 @@ nav a.active-link{
     z-index: 9;
     display: none;
 }
+
 /*grid*/
+
 .box{
-    border: 2px solid var(--hover-color);
+    border-radius: 1.4em;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .grid-container {
@@ -197,6 +200,8 @@ nav a.active-link{
     "box2 box3 box4"
     "box2 box3 box4";
 }
+
+/*clima*/
 
 form:has(div.user-box) {
     height: 100%;
@@ -302,6 +307,8 @@ form:has(div.user-box) {
 #search-again-btn:hover {
   background: var(--hover-color);
 }
+
+/*responsive*/
 
 @media screen and (max-width: 750px) {
     #abrir-menu, #cerrar-menu {
