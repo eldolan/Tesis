@@ -1,23 +1,10 @@
 from flask import render_template
 from flask import current_app as app
 from flask import request, jsonify
-from azure.keyvault.secrets import SecretClient
-from azure.identity import DefaultAzureCredential
 import requests
+import os
 
-from azure.keyvault.secrets import SecretClient
-from azure.identity import DefaultAzureCredential
-
-key_vault_name = "APIspanelcontrol"
-KVUri = f"https://{key_vault_name}.vault.azure.net"
-secret_name = "openweatherapi"
-
-credential = DefaultAzureCredential()
-client = SecretClient(vault_url=KVUri, credential=credential)
-
-retrieved_secret = client.get_secret(secret_name)
-
-API_KEY = retrieved_secret.value
+API_KEY = os.environ.get('OPENWEATHER_API_KEY')
 
 @app.route('/')
 def home():
