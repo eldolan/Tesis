@@ -19,8 +19,26 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd /var/www/Tesis
-          git pull origin Pagina-web
-          source venv/bin/activate
-          pip install -r requirements.txt
-          sudo systemctl restart Tesis.service
+            echo "--- Iniciando despliegue en el servidor ---"
+            cd /var/www/Tesis
+            
+            echo "--- Verificando usuario y ubicación actual ---"
+            whoami
+            pwd
+            
+            echo "--- Descargando los últimos cambios de GitHub ---"
+            git pull origin Pagina-web
+            
+            echo "--- Mostrando el último commit ---"
+            git log -n 1
+            
+            echo "--- Instalando/actualizando dependencias ---"
+            /var/www/Tesis/venv/bin/pip install -r requirements.txt
+            
+            echo "--- Reiniciando el servicio de la aplicación ---"
+            sudo systemctl restart Tesis.service
+            
+            echo "--- Verificando el estado del servicio ---"
+            sudo systemctl status Tesis.service
+            
+            echo "--- Despliegue finalizado ---"
