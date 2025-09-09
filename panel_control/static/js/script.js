@@ -29,7 +29,7 @@ async function getWeatherAPIresults(city, originalFormHTML) {
         const resultsHTML = `
             <div class="weather-results">
                  <h1 class="weather-title">Clima en ${weatherData.city}</h1>
-                 <img src="http://openweathermap.org/img/wn/${weatherData.icon}@2x.png" alt="icono del clima">
+                 <img src="https://openweathermap.org/img/wn/${weatherData.icon}@2x.png" alt="icono del clima">
                  <h3 class="weather-description">${weatherData.description}</h3>
                  <h2 class="weather-temp">${weatherData.temperature}°C</h2>
                  <p>Humedad: ${weatherData.humidity}%</p>
