@@ -194,7 +194,7 @@ nav a.active-link{
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     height: calc(100vh - 16em);
-    grid-template-rows: 1fr 2fr;
+    grid-template-rows: auto 1fr;
     gap: 1em;
     grid-template-areas: 
     "box1 box1 box1"
@@ -347,7 +347,7 @@ form:has(div.user-box) {
 #irrigation-chart-container {
     padding: 1.5em;
     display: grid;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto 1fr; /* Fila para el header, el resto para el gráfico */
     gap: 1em;
 }
 
@@ -379,12 +379,7 @@ form:has(div.user-box) {
 }
 
 #chart {
-    position: relative;
-}
-
-#chart {
-    flex-grow: 1;
-    min-height: 0;
+    position: relative; 
 }
 
 /*responsive*/
