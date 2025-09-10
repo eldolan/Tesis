@@ -452,11 +452,8 @@ form:has(div.user-box) {
     }
     .login-box {
         width: 100%;
-        min-height: 250px;
-    }
-    .weather-results {
-        width: 100%;
-        min-height: 250px;
+        height: auto;
+        padding: 2em 1em;
     }
     .weather-results .weather-title {
         font-size: 1.3rem;
