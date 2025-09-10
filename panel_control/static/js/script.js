@@ -218,6 +218,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 ]);
             }
         };
+
+        const adjustChartHeight = () => {
+            const container = document.getElementById('irrigation-chart-container');
+            const header = container.querySelector('.chart-header');
+
+            if (container && header) {
+                const containerStyle = window.getComputedStyle(container);
+                
+                // Medimos la altura total del contenedor .box
+                const containerHeight = container.clientHeight;
+                
+                // Restamos los paddings superior e inferior del contenedor
+                const paddingTop = parseFloat(containerStyle.paddingTop);
+                const paddingBottom = parseFloat(containerStyle.paddingBottom);
+                
+                // Restamos la altura actual del header (que puede cambiar si se hace wrap)
+                const headerHeight = header.offsetHeight;
+                
+                // Restamos el espacio 'gap' entre el header y el gráfico
+                const gap = parseFloat(containerStyle.gap);
+
+                // El resultado es la altura exacta en píxeles que debe tener el gráfico
+                const availableHeight = containerHeight - paddingTop - paddingBottom - headerHeight - gap;
+
+                // Forzamos al gráfico a tomar esta altura exacta
+                chart.updateOptions({
+                    chart: {
+                        height: availableHeight
+                    }
+                });
+            }
+        };
         
         stackedBtn.addEventListener('click', () => {
             stackedBtn.classList.add('active');
@@ -245,6 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 updateChartView();
 
+                adjustChartHeight();
+
             } catch (error) {
                 console.error("Fallo el polling:", error);
             }
@@ -252,6 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetchAndUpdateData();
         setInterval(fetchAndUpdateData, 5000);
+        window.addEventListener('resize', adjustChartHeight);
     }
 });
 
