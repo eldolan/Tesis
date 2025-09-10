@@ -381,6 +381,7 @@ form:has(div.user-box) {
 
 #chart {
     flex-grow: 1;
+    min-height: 0;
 }
 
 /*responsive*/
