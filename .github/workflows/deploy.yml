@@ -22,14 +22,13 @@ jobs:
             echo "--- Iniciando despliegue en el servidor ---"
             cd /var/www/Tesis
             
-            echo "--- Verificando usuario y ubicación actual ---"
-            whoami
-            pwd
+            echo "--- Forzando la actualización al último commit ---"
+            # Descarga la información más reciente del repositorio remoto
+            git fetch origin Pagina-web
+            git reset --hard origin/Pagina-web
+            git clean -dfx
             
-            echo "--- Descargando los últimos cambios de GitHub ---"
-            git pull origin Pagina-web
-            
-            echo "--- Mostrando el último commit ---"
+            echo "--- Mostrando el último commit (después del reset) ---"
             git log -n 1
             
             echo "--- Instalando/actualizando dependencias ---"
