@@ -463,6 +463,10 @@ form:has(div.user-box) {
     }
     #irrigation-chart-container {
         min-height: 60vh;
+        padding-bottom: 0;
+    }
+    #chart {
+        padding-bottom: 0;
     }
 }
 @media screen and (max-width: 375px) {
