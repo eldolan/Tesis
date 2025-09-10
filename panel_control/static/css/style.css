@@ -440,7 +440,7 @@ form:has(div.user-box) {
      }
      .grid-container {
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: auto;
         grid-template-rows: auto;
         gap: 1em;
         height: auto;
