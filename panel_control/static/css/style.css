@@ -198,7 +198,6 @@ nav a.active-link{
     gap: 1em;
     grid-template-areas: 
     "box1 box1 box1"
-    "box2 box3 box4"
     "box2 box3 box4";
 }
 
