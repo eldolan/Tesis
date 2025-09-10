@@ -220,6 +220,7 @@ form:has(div.user-box) {
 
 .login-box .user-box {
   position: relative;
+  width: 80%;
 }
 
 .login-box form button, #search-again-btn {
