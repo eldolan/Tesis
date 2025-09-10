@@ -28,7 +28,7 @@
                         <img title="Inicio" src="{{ url_for('static', filename='images/logo.svg') }}" alt="Logo">
                     </a>
                 </li>
-                <li><a href="#" class="nav-text">Inicio</a></li>
+                <li><a href="#" class="nav-text active-link">Inicio</a></li>
                 <li><a href="#" class="nav-text">Riego</a></li>
                 <li><a href="#" class="nav-text">Fertilizante</a></li>
                 <li><a href="#" class="nav-text">Contacto</a></li>
@@ -48,7 +48,7 @@
 </header>
 <main>
     <div class="grid-container">
-        <div class="box" style="grid-area: box1; padding: 1em;">
+        <div class="box main-box-container" style="grid-area: box1; padding: 1em;">
             <div id="weather-container" class="login-box">
                 <form id="weather-form">
                     <div class="user-box">
@@ -60,6 +60,17 @@
                     </button>
                 </form>
             </div>
+
+            <div class="info-box">
+                <h2>Contenedor 2</h2>
+                <p>Aquí puedes poner más información, gráficos o controles.</p>
+            </div>
+
+            <div class="info-box">
+                <h2>Contenedor 3</h2>
+                <p>Y este es el tercer espacio disponible en la fila superior.</p>
+            </div>
+
         </div>
         <div class="box" style="grid-area: box2;">
             <h2>Grafico riego</h2>

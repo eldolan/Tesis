@@ -117,7 +117,8 @@ nav #logo-usuario img {
     height: 2rem;
 }
 
-nav .nav-text:hover::before {
+nav .nav-text:hover::before
+nav .nav-text.active-link::before {
   width: 100%;
   left: 0;
 }
@@ -201,6 +202,28 @@ nav a.active-link{
     "box2 box3 box4";
 }
 
+#main-box-container {
+    display: flex;
+    gap: 1em;
+    padding: 1em;
+}
+
+.info-box {
+    background: #0505053f;
+    border-radius: 0.8em;
+    padding: 1.5em;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#main-box-container > div {
+    flex: 1 1 32%;
+    min-width: 280px;
+}
+
 /*clima*/
 
 form:has(div.user-box) {
@@ -211,7 +234,6 @@ form:has(div.user-box) {
     align-items: center;
 }
 .login-box {
-    width: 33%;
     height: 100%;
     background: #0505053f;
     box-sizing: border-box;
@@ -323,6 +345,12 @@ form:has(div.user-box) {
 }
 
 /*responsive*/
+
+@media screen and (max-width: 1024px) {
+    #main-box-container {
+        flex-direction: column;
+    }
+}
 
 @media screen and (max-width: 750px) {
     #abrir-menu, #cerrar-menu {
