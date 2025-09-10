@@ -461,6 +461,9 @@ form:has(div.user-box) {
     .weather-results .weather-temp {
         font-size: 2.2rem;
     }
+    #irrigation-chart-container {
+        min-height: 60vh;
+    }
 }
 @media screen and (max-width: 375px) {
     .login-box, .weather-results {

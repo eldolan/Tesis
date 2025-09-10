@@ -156,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     legend: { show: false },
                     annotations: {
+                        xaxis: [],
                         yaxis: [
                             {
                                 y: 90,
@@ -199,6 +200,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 chart.updateSeries([{ name: 'Sumatoria', data: sumData }]);
 
             } else {
+                const irrigationAnnotations = chartData.irrigation_events.map(eventDate => {
+                    const date = new Date(eventDate);
+                    date.setHours(0, 0, 0, 0);
+                    const startTime = date.getTime();
+                    date.setHours(23, 59, 59, 999);
+                    const endTime = date.getTime();
+
+                    return {
+                        x: startTime,
+                        x2: endTime,
+                        fillColor: 'var(--accent-color)',
+                        opacity: 0.15,
+                        label: {
+                           text: 'Riego',
+                           style: { background: 'var(--accent-color)', color: '#fff', fontSize: '10px' },
+                           offsetY: 10,
+                        }
+                    };
+                });
                 
                 chart.updateOptions({
                     yaxis: {
@@ -208,7 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     legend: { show: true },
                     annotations: {
-                        yaxis: []
+                        yaxis: [],
+                        xaxis: irrigationAnnotations
                     }
                 });
                 chart.updateSeries([

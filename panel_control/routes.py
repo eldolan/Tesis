@@ -65,6 +65,7 @@ def get_irrigation_data():
     sensor1 = []
     sensor2 = []
     sensor3 = []
+    irrigation_events = []
     base_val = 95
     
     end_date = datetime.now()
@@ -75,9 +76,11 @@ def get_irrigation_data():
         dates.append(current_date.isoformat())
         
         base_val -= (random.random() * 1.5) + 0.5
+        
         if current_date.weekday() in [0, 3, 6]:
              base_val = 95 + random.uniform(-2, 2)
-        
+             irrigation_events.append(current_date.isoformat())
+
         s1 = round(min(100, max(0, base_val + random.uniform(-1, 1))), 2)
         s2 = round(min(100, max(0, base_val - 2 + random.uniform(-1.5, 1.5))), 2)
         s3 = round(min(100, max(0, base_val - 5 + random.uniform(-2, 2))), 2)
@@ -92,5 +95,6 @@ def get_irrigation_data():
         'dates': dates,
         'sensor1': sensor1,
         'sensor2': sensor2,
-        'sensor3': sensor3
+        'sensor3': sensor3,
+        'irrigation_events': irrigation_events
     })
