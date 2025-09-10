@@ -117,77 +117,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const irrigationChartContainer = document.getElementById('irrigation-chart-container');
     if (irrigationChartContainer) {
 
-        const generateDummyData = () => {
-            let dates = [];
-            let sensor1 = [];
-            let sensor2 = [];
-            let sensor3 = [];
-            let baseVal = 95;
-
-            for (let i = 1; i <= 30; i++) {
-                dates.push(new Date(2025, 7, i).getTime());
-
-                baseVal -= (Math.random() * 1.5) + 1;
-
-                if (i % 4 === 0) {
-                    baseVal = 95;
-                }
-
-                sensor1.push(parseFloat(Math.min(100, baseVal + Math.random() * 2).toFixed(2)));
-                sensor2.push(parseFloat(Math.min(100, baseVal - 2 + Math.random() * 3).toFixed(2)));
-                sensor3.push(parseFloat(Math.min(100, baseVal - 5 + Math.random() * 2).toFixed(2)));
-            }
-            return { dates, sensor1, sensor2, sensor3 };
-        };
-
-        const { dates, sensor1, sensor2, sensor3 } = generateDummyData();
+        let chartData = {};
 
         const options = {
-            chart: {
-                type: 'line',
-                height: '100%',
-                background: 'transparent',
-                toolbar: { show: true },
-                animations: {
-                    enabled: true,
-                    easing: 'easeinout',
-                    speed: 500,
-                }
-            },
-            theme: {
-                mode: 'dark',
-                palette: 'palette2' // Puedes probar otros como 'palette1', 'palette3', etc.
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 3
-            },
-            series: [
-                { name: 'Sensor 20cm', data: sensor1 },
-                { name: 'Sensor 40cm', data: sensor2 },
-                { name: 'Sensor 60cm', data: sensor3 }
-            ],
-            xaxis: {
-                type: 'datetime',
-                categories: dates,
-            },
-            yaxis: {
-                title: {
-                    text: 'Humedad del Suelo'
-                }
-            },
-            tooltip: {
-                x: {
-                    format: 'dd MMM yyyy'
-                }
-            },
-            grid: {
-                borderColor: '#55555533'
-            },
-            legend: {
-                position: 'top',
-                horizontalAlign: 'left'
-            }
+            chart: { type: 'line', height: '100%', background: 'transparent', toolbar: { show: true } },
+            theme: { mode: 'dark', palette: 'palette2' },
+            stroke: { curve: 'smooth', width: 3 },
+            series: [],
+            xaxis: { type: 'datetime', categories: [] },
+            yaxis: { title: { text: 'Humedad del Suelo' } },
+            tooltip: { x: { format: 'dd MMM yyyy' } },
+            grid: { borderColor: '#55555533' },
+            legend: { position: 'top', horizontalAlign: 'left' },
+            noData: { text: 'Cargando datos del sensor...' }
         };
 
         const chart = new ApexCharts(document.querySelector("#chart"), options);
@@ -196,38 +138,60 @@ document.addEventListener('DOMContentLoaded', () => {
         const stackedBtn = document.getElementById('stacked-view-btn');
         const sumBtn = document.getElementById('sum-view-btn');
 
-        const showStackedView = () => {
-            chart.updateOptions({
-                yaxis: { title: { text: 'Humedad del Suelo' } },
-                legend: { show: true }
-            });
-            chart.updateSeries([
-                { name: 'Sensor 20cm', data: sensor1 },
-                { name: 'Sensor 40cm', data: sensor2 },
-                { name: 'Sensor 60cm', data: sensor3 }
-            ]);
+        const updateChartView = () => {
+            if (!chartData.dates) return;
+
+            const isSumView = sumBtn.classList.contains('active');
+
+            if (isSumView) {
+                const sumData = chartData.sensor1.map((val, i) => 
+                    parseFloat(((val + chartData.sensor2[i] + chartData.sensor3[i]) / 3).toFixed(2))
+                );
+                chart.updateOptions({ yaxis: { title: { text: 'Humedad Promedio Total' } }, legend: { show: false } });
+                chart.updateSeries([{ name: 'Sumatoria', data: sumData }]);
+            } else {
+                chart.updateOptions({ yaxis: { title: { text: 'Humedad del Suelo' } }, legend: { show: true } });
+                chart.updateSeries([
+                    { name: 'Sensor 20cm', data: chartData.sensor1 },
+                    { name: 'Sensor 40cm', data: chartData.sensor2 },
+                    { name: 'Sensor 60cm', data: chartData.sensor3 }
+                ]);
+            }
+        };
+        
+        stackedBtn.addEventListener('click', () => {
             stackedBtn.classList.add('active');
             sumBtn.classList.remove('active');
-        };
-
-        const showSumView = () => {
-            const sumData = sensor1.map((val, index) => {
-                return parseFloat(((val + sensor2[index] + sensor3[index]) / 3).toFixed(2));
-            });
-
-            chart.updateOptions({
-                yaxis: { title: { text: 'Humedad Promedio Total' } },
-                legend: { show: false }
-            });
-            chart.updateSeries([
-                { name: 'Sumatoria', data: sumData }
-            ]);
+            updateChartView();
+        });
+        
+        sumBtn.addEventListener('click', () => {
             sumBtn.classList.add('active');
             stackedBtn.classList.remove('active');
+            updateChartView();
+        });
+
+        const fetchAndUpdateData = async () => {
+            try {
+                const response = await fetch('/get_irrigation_data');
+                if (!response.ok) throw new Error('Error al obtener los datos');
+                
+                const newData = await response.json();
+                chartData = newData;
+
+                chart.updateOptions({
+                    xaxis: { categories: chartData.dates }
+                });
+                
+                updateChartView();
+
+            } catch (error) {
+                console.error("Fallo el polling:", error);
+            }
         };
 
-        stackedBtn.addEventListener('click', showStackedView);
-        sumBtn.addEventListener('click', showSumView);
+        fetchAndUpdateData();
+        setInterval(fetchAndUpdateData, 5000);
     }
 });
 
