@@ -8,7 +8,7 @@ function cerrarSidebar() {
     navbar.classList.remove('show');
 }
 
-async function getWeatherAPIresults(city, originalFormHTML) {
+async function getWeatherAPIresults(city, originalFormHTML, weatherContainer) {
     try {
         const response = await fetch('/get_weather', {
             method: 'POST',
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ciudadGuardada = localStorage.getItem("ciudad_usuario");
 
     if (ciudadGuardada) {
-        getWeatherAPIresults(ciudadGuardada, originalFormHTML);
+        getWeatherAPIresults(ciudadGuardada, originalFormHTML, weatherContainer);
     }
     
     weatherContainer.addEventListener('submit', async (event) => {
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cityInput = form.querySelector('#city');
             const city = cityInput.value;
 
-            getWeatherAPIresults(city, originalFormHTML);
+            getWeatherAPIresults(city, originalFormHTML, weatherContainer);
         }
     });
 
