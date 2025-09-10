@@ -113,4 +113,121 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         tomSelectInstance = initializeCitySelect();
     }
+
+    const irrigationChartContainer = document.getElementById('irrigation-chart-container');
+    if (irrigationChartContainer) {
+
+        const generateDummyData = () => {
+            let dates = [];
+            let sensor1 = [];
+            let sensor2 = [];
+            let sensor3 = [];
+            let baseVal = 95;
+
+            for (let i = 1; i <= 30; i++) {
+                dates.push(new Date(2025, 7, i).getTime());
+
+                baseVal -= (Math.random() * 1.5) + 1;
+
+                if (i % 4 === 0) {
+                    baseVal = 95;
+                }
+
+                sensor1.push(parseFloat(Math.min(100, baseVal + Math.random() * 2).toFixed(2)));
+                sensor2.push(parseFloat(Math.min(100, baseVal - 2 + Math.random() * 3).toFixed(2)));
+                sensor3.push(parseFloat(Math.min(100, baseVal - 5 + Math.random() * 2).toFixed(2)));
+            }
+            return { dates, sensor1, sensor2, sensor3 };
+        };
+
+        const { dates, sensor1, sensor2, sensor3 } = generateDummyData();
+
+        const options = {
+            chart: {
+                type: 'line',
+                height: '100%',
+                background: 'transparent',
+                toolbar: { show: true },
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 500,
+                }
+            },
+            theme: {
+                mode: 'dark',
+                palette: 'palette2' // Puedes probar otros como 'palette1', 'palette3', etc.
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            series: [
+                { name: 'Sensor 20cm', data: sensor1 },
+                { name: 'Sensor 40cm', data: sensor2 },
+                { name: 'Sensor 60cm', data: sensor3 }
+            ],
+            xaxis: {
+                type: 'datetime',
+                categories: dates,
+            },
+            yaxis: {
+                title: {
+                    text: 'Humedad del Suelo'
+                }
+            },
+            tooltip: {
+                x: {
+                    format: 'dd MMM yyyy'
+                }
+            },
+            grid: {
+                borderColor: '#55555533'
+            },
+            legend: {
+                position: 'top',
+                horizontalAlign: 'left'
+            }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#chart"), options);
+        chart.render();
+
+        const stackedBtn = document.getElementById('stacked-view-btn');
+        const sumBtn = document.getElementById('sum-view-btn');
+
+        const showStackedView = () => {
+            chart.updateOptions({
+                yaxis: { title: { text: 'Humedad del Suelo' } },
+                legend: { show: true }
+            });
+            chart.updateSeries([
+                { name: 'Sensor 20cm', data: sensor1 },
+                { name: 'Sensor 40cm', data: sensor2 },
+                { name: 'Sensor 60cm', data: sensor3 }
+            ]);
+            stackedBtn.classList.add('active');
+            sumBtn.classList.remove('active');
+        };
+
+        const showSumView = () => {
+            const sumData = sensor1.map((val, index) => {
+                return parseFloat(((val + sensor2[index] + sensor3[index]) / 3).toFixed(2));
+            });
+
+            chart.updateOptions({
+                yaxis: { title: { text: 'Humedad Promedio Total' } },
+                legend: { show: false }
+            });
+            chart.updateSeries([
+                { name: 'Sumatoria', data: sumData }
+            ]);
+            sumBtn.classList.add('active');
+            stackedBtn.classList.remove('active');
+        };
+
+        stackedBtn.addEventListener('click', showStackedView);
+        sumBtn.addEventListener('click', showSumView);
+    }
 });
+

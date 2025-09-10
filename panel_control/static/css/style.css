@@ -344,6 +344,45 @@ form:has(div.user-box) {
     color: #fff !important;
 }
 
+/* Grafico Riego */
+#irrigation-chart-container {
+    padding: 1.5em;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1em;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+.chart-toggle button {
+    padding: 0.5em 1em;
+    color: var(--text-color);
+    border: 1px solid var(--hover-color);
+    margin-left: 0.5em;
+    border-radius: 0.5em;
+    transition: background-color 0.3s;
+}
+
+.chart-toggle button:hover {
+    background-color: var(--hover-color);
+}
+
+.chart-toggle button.active {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #ffffff;
+}
+
+#chart {
+    flex-grow: 1;
+}
+
 /*responsive*/
 
 @media screen and (max-width: 1024px) {

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/logo.svg') }}">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script> 
 </head>
 <body>
 <header>
@@ -63,17 +64,26 @@
 
             <div class="info-box">
                 <h2>Contenedor 2</h2>
-                <p>Aquí puedes poner más información, gráficos o controles.</p>
+                <p>Fase de la planta</p>
             </div>
 
             <div class="info-box">
                 <h2>Contenedor 3</h2>
-                <p>Y este es el tercer espacio disponible en la fila superior.</p>
+                <p>Estado del sistema</p>
             </div>
 
         </div>
         <div class="box" style="grid-area: box2;">
-            <h2>Grafico riego</h2>
+            <div class="box" id="irrigation-chart-container" style="grid-area: box2;">
+                <div class="chart-header">
+                    <h2>Gráfico de Riego</h2>
+                    <div class="chart-toggle">
+                        <button id="stacked-view-btn" class="active">Apilado</button>
+                        <button id="sum-view-btn">Sumatoria</button>
+                    </div>
+                </div>
+                <div id="chart"></div>
+            </div>
         </div>
         <div class="box" style="grid-area: box3;">
             <h2>Grafico fertilizante</h2>
