@@ -26,7 +26,6 @@ jobs:
             # Descarga la información más reciente del repositorio remoto
             git fetch origin Pagina-web
             git reset --hard origin/Pagina-web
-            git clean -dfx
             
             echo "--- Mostrando el último commit (después del reset) ---"
             git log -n 1

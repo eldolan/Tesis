@@ -54,11 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const ciudadGuardada = localStorage.getItem("ciudad_usuario");
 
     if (ciudadGuardada) {
-        // Si hay una ciudad, la usamos para obtener el clima
         getWeatherAPIresults(ciudadGuardada, originalFormHTML);
     }
     
-    // Aquí es donde se maneja el envío del formulario
     weatherContainer.addEventListener('submit', async (event) => {
         if (event.target.id === 'weather-form') {
             event.preventDefault();
