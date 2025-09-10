@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let chartData = {};
 
         const options = {
-            chart: { type: 'line', height: '100%', background: 'transparent', toolbar: { show: true } },
+            chart: { type: 'line', height: '95%', background: 'transparent', toolbar: { show: true } },
             theme: { mode: 'dark', palette: 'palette2' },
             stroke: { curve: 'smooth', width: 3 },
             series: [],
