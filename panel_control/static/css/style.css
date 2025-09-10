@@ -308,6 +308,42 @@ form:has(div.user-box) {
   background: var(--hover-color);
 }
 
+.ts-control {
+    background-color: var(--primary-color) !important;
+    border: 1px solid var(--hover-color) !important;
+    border-radius: 0.5em !important;
+    padding: 0.5em 1em !important;
+    color: var(--text-color);
+}
+
+.ts-control input {
+    color: var(--text-color) !important;
+}
+
+.ts-control.plugin-dropdown_input.focus {
+    box-shadow: none !important;
+}
+
+.ts-dropdown {
+    background: var(--primary-color) !important;
+    border: 1px solid var(--hover-color) !important;
+    color: var(--text-color);
+}
+
+.ts-dropdown .option {
+    padding: 0.5em 1em;
+}
+
+.ts-dropdown .option.active, .ts-dropdown .option:hover {
+    background-color: var(--hover-color) !important;
+    color: #fff !important;
+}
+
+.ts-dropdown .no-results {
+    padding: 0.5em 1em;
+    color: #888;
+}
+
 /*responsive*/
 
 @media screen and (max-width: 750px) {

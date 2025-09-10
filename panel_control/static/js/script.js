@@ -8,14 +8,14 @@ function cerrarSidebar() {
     navbar.classList.remove('show');
 }
 
-async function getWeatherAPIresults(city, originalFormHTML, weatherContainer) {
+async function getWeatherAPIresults(cityId, originalFormHTML, weatherContainer) {
     try {
         const response = await fetch('/get_weather', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ city: city })
+            body: JSON.stringify({ city_id: cityId })
         });
 
         if (!response.ok) {
@@ -24,7 +24,7 @@ async function getWeatherAPIresults(city, originalFormHTML, weatherContainer) {
 
         const weatherData = await response.json();
         
-        localStorage.setItem("ciudad_usuario", weatherData.city);
+        localStorage.setItem("ciudad_usuario_id", cityId);
 
         const resultsHTML = `
             <div class="weather-results">
@@ -42,37 +42,65 @@ async function getWeatherAPIresults(city, originalFormHTML, weatherContainer) {
         console.error('Error al obtener el clima:', error);
         alert(error.message);
         weatherContainer.innerHTML = originalFormHTML;
+        initializeCitySelect();
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initializeCitySelect() {
+    return new TomSelect('#city-select', {
+        valueField: 'id',
+        labelField: 'name',
+        searchField: 'name',
+        create: false,
+        load: function(query, callback) {
+            fetch('/get_chilean_cities')
+                .then(response => response.json())
+                .then(json => {
+                    callback(json);
+                }).catch(()=>{
+                    callback();
+                });
+        },
+        render: {
+            no_results: function(data, escape) {
+                return '<div class="no-results">No se encontraron resultados.</div>';
+            },
+        }
+    });
+}
 
+
+document.addEventListener('DOMContentLoaded', () => {
     const weatherContainer = document.getElementById('weather-container');
     const originalFormHTML = weatherContainer.innerHTML;
+    let tomSelectInstance;
 
-    // Verificar si hay una ciudad guardada al cargar la página
-    const ciudadGuardada = localStorage.getItem("ciudad_usuario");
+    // Lógica principal
+    const ciudadGuardadaId = localStorage.getItem("ciudad_usuario_id");
 
-    if (ciudadGuardada) {
-        getWeatherAPIresults(ciudadGuardada, originalFormHTML, weatherContainer);
+    if (ciudadGuardadaId) {
+        getWeatherAPIresults(ciudadGuardadaId, originalFormHTML, weatherContainer);
+    } else {
+        tomSelectInstance = initializeCitySelect();
     }
     
     weatherContainer.addEventListener('submit', async (event) => {
         if (event.target.id === 'weather-form') {
             event.preventDefault();
-
-            const form = event.target;
-            const cityInput = form.querySelector('#city');
-            const city = cityInput.value;
-
-            getWeatherAPIresults(city, originalFormHTML, weatherContainer);
+            const cityId = tomSelectInstance.getValue();
+            if (cityId) {
+                getWeatherAPIresults(cityId, originalFormHTML, weatherContainer);
+            } else {
+                alert("Por favor, selecciona una ciudad.");
+            }
         }
     });
 
     weatherContainer.addEventListener('click', (event) => {
         if (event.target.id === 'search-again-btn') {
-            localStorage.removeItem("ciudad_usuario");
+            localStorage.removeItem("ciudad_usuario_id");
             weatherContainer.innerHTML = originalFormHTML;
+            tomSelectInstance = initializeCitySelect();
         }
     });
 });

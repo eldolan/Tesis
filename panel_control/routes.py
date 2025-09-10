@@ -3,6 +3,7 @@ from flask import current_app as app
 from flask import request, jsonify
 import requests
 import os
+import json
 
 API_KEY = os.environ.get('OPENWEATHER_API_KEY')
 
@@ -10,15 +11,34 @@ API_KEY = os.environ.get('OPENWEATHER_API_KEY')
 def home():
     return render_template('index.html')
 
+@app.route('/get_chilean_cities')
+def get_chilean_cities():
+    chilean_cities = []
+    try:
+        with open('city.list.json', 'r', encoding='utf-8') as f:
+            all_cities = json.load(f)
+            for city in all_cities:
+                if city.get('country') == 'CL':
+                    chilean_cities.append({
+                        'id': city['id'],
+                        'name': city['name']
+                    })
+        chilean_cities.sort(key=lambda x: x['name'])
+        return jsonify(chilean_cities)
+    except FileNotFoundError:
+        return jsonify({"error": "El archivo de ciudades (city.list.json) no se encontró en el servidor."}), 404
+    except Exception as e:
+        return jsonify({"error": f"Ocurrió un error procesando la lista de ciudades: {str(e)}"}), 500
+
 @app.route('/get_weather', methods=['POST'])
 def get_weather_data():
     data = request.get_json()
     
-    if not data or 'city' not in data:
+    if not data or 'city_id' not in data:
         return jsonify({'error': 'La ciudad es requerida.'}), 400
 
     city = data['city']
-    url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric&lang=es'
+    url = f'http://api.openweathermap.org/data/2.5/weather?id={city_id}&appid={API_KEY}&units=metric&lang=es'
     
     response = requests.get(url).json()
 
@@ -27,9 +47,9 @@ def get_weather_data():
         return jsonify({'error': error_message}), response.get('cod', 404)
 
     weather_data = {
-        'city': city.title(),
+        'city': response['name'],
         'temperature': round(response['main']['temp']),
-        'description': response['weather'][0]['description'].capitalize(),
+        'description': response['weather'][0]['description'],
         'humidity': response['main']['humidity'],
         'wind_speed': response['wind']['speed'],
         'icon': response['weather'][0]['icon']
