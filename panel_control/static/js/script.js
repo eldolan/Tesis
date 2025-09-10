@@ -147,10 +147,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sumData = chartData.sensor1.map((val, i) => 
                     parseFloat(((val + chartData.sensor2[i] + chartData.sensor3[i]) / 3).toFixed(2))
                 );
-                chart.updateOptions({ yaxis: { title: { text: 'Humedad Promedio Total' } }, legend: { show: false } });
+
+                chart.updateOptions({
+                    yaxis: {
+                        title: { text: 'Humedad Promedio Total' },
+                        min: 40,
+                        max: 100
+                    },
+                    legend: { show: false },
+                    annotations: {
+                        yaxis: [
+                            {
+                                y: 90,
+                                y2: 100,
+                                borderColor: '#0071FF',
+                                fillColor: '#0071FF',
+                                opacity: 0.15,
+                                label: {
+                                    borderColor: '#0071FF',
+                                    style: { color: '#FFF', background: '#0071FF' },
+                                    text: 'Nivel de Lleno (Full Point)'
+                                }
+                            },
+                            {
+                                y: 70,
+                                y2: 90,
+                                borderColor: '#00E396',
+                                fillColor: '#00E396',
+                                opacity: 0.1,
+                                label: {
+                                    borderColor: '#00E396',
+                                    style: { color: '#FFF', background: '#00E396' },
+                                    text: 'Punto de Recarga (Refill Point)'
+                                }
+                            },
+                            {
+                                y: 55,
+                                y2: 70,
+                                borderColor: '#FEB019',
+                                fillColor: '#FEB019',
+                                opacity: 0.1,
+                                label: {
+                                    borderColor: '#FEB019',
+                                    style: { color: '#FFF', background: '#FEB019' },
+                                    text: 'Inicio de Estrés'
+                                }
+                            }
+                        ]
+                    }
+                });
                 chart.updateSeries([{ name: 'Sumatoria', data: sumData }]);
+
             } else {
-                chart.updateOptions({ yaxis: { title: { text: 'Humedad del Suelo' } }, legend: { show: true } });
+                
+                chart.updateOptions({
+                    yaxis: {
+                        title: { text: 'Humedad del Suelo' },
+                        min: undefined,
+                        max: undefined
+                    },
+                    legend: { show: true },
+                    annotations: {
+                        yaxis: []
+                    }
+                });
                 chart.updateSeries([
                     { name: 'Sensor 20cm', data: chartData.sensor1 },
                     { name: 'Sensor 40cm', data: chartData.sensor2 },

@@ -72,15 +72,12 @@ def get_irrigation_data():
     
     current_date = start_date
     while current_date <= end_date:
-        # Formato de fecha ISO 8601, que JavaScript entiende perfectamente
         dates.append(current_date.isoformat())
         
-        # Simulamos el consumo de agua y un riego cada 3 días
         base_val -= (random.random() * 1.5) + 0.5
-        if current_date.weekday() in [0, 3, 6]: # Riego Lunes, Jueves, Domingo
+        if current_date.weekday() in [0, 3, 6]:
              base_val = 95 + random.uniform(-2, 2)
         
-        # Añadimos pequeñas variaciones a cada sensor y nos aseguramos que no pasen de 100
         s1 = round(min(100, max(0, base_val + random.uniform(-1, 1))), 2)
         s2 = round(min(100, max(0, base_val - 2 + random.uniform(-1.5, 1.5))), 2)
         s3 = round(min(100, max(0, base_val - 5 + random.uniform(-2, 2))), 2)
