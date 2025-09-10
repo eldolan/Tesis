@@ -346,15 +346,15 @@ form:has(div.user-box) {
 /* Grafico Riego */
 #irrigation-chart-container {
     padding: 1.5em;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 1em;
 }
 
 .chart-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1em;
     flex-wrap: wrap;
     gap: 1em;
 }
@@ -376,6 +376,10 @@ form:has(div.user-box) {
     background-color: var(--accent-color);
     border-color: var(--accent-color);
     color: #ffffff;
+}
+
+#chart {
+    position: relative;
 }
 
 #chart {
