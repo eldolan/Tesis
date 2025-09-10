@@ -117,8 +117,7 @@ nav #logo-usuario img {
     height: 2rem;
 }
 
-nav .nav-text:hover::before
-nav .nav-text.active-link::before {
+nav .nav-text:hover::before {
   width: 100%;
   left: 0;
 }
@@ -346,7 +345,7 @@ form:has(div.user-box) {
 
 /* Grafico Riego */
 #irrigation-chart-container {
-    padding: 1.5em;
+    padding: 1.5em 0 1.5em 0;
     display: flex;
     flex-direction: column;
 }
@@ -355,7 +354,7 @@ form:has(div.user-box) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1em;
+    padding: 0 1.5em 0 1.5em;
     flex-wrap: wrap;
     gap: 1em;
 }
@@ -382,6 +381,7 @@ form:has(div.user-box) {
 #chart {
     flex-grow: 1;
     min-height: 0;
+    align-content: 0;
 }
 
 /*responsive*/
