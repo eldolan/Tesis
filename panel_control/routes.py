@@ -37,7 +37,7 @@ def get_weather_data():
     if not data or 'city_id' not in data:
         return jsonify({'error': 'La ciudad es requerida.'}), 400
 
-    city = data['city']
+    city_id = data['city_id']
     url = f'http://api.openweathermap.org/data/2.5/weather?id={city_id}&appid={API_KEY}&units=metric&lang=es'
     
     response = requests.get(url).json()
