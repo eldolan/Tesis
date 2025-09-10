@@ -194,10 +194,11 @@ nav a.active-link{
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     height: calc(100vh - 16em);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: 1fr 2fr;
     gap: 1em;
     grid-template-areas: 
     "box1 box1 box1"
+    "box2 box3 box4"
     "box2 box3 box4";
 }
 
@@ -346,15 +347,15 @@ form:has(div.user-box) {
 /* Grafico Riego */
 #irrigation-chart-container {
     padding: 1.5em;
-    display: grid;
-    grid-template-rows: auto 1fr; /* Fila para el header, el resto para el gráfico */
-    gap: 1em;
+    display: flex;
+    flex-direction: column;
 }
 
 .chart-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 1em;
     flex-wrap: wrap;
     gap: 1em;
 }
@@ -379,7 +380,8 @@ form:has(div.user-box) {
 }
 
 #chart {
-    position: relative; 
+    flex-grow: 1;
+    min-height: 0;
 }
 
 /*responsive*/
