@@ -193,11 +193,10 @@ nav a.active-link{
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     height: calc(100vh - 16em);
-    grid-template-rows: repeat(3, minmax(400px, 40vh));
+    grid-template-rows: repeat(2, minmax(400px, 40vh));
     gap: 1em;
     grid-template-areas: 
     "box1 box1 box1"
-    "box2 box3 box4"
     "box2 box3 box4";
 }
 
