@@ -98,3 +98,46 @@ def get_irrigation_data():
         'sensor3': sensor3,
         'irrigation_events': irrigation_events
     })
+
+@app.route('/get_fertilizer_data')
+def get_fertilizer_data():
+    dates = []
+    nitrogen = []
+    phosphorus = []
+    potassium = []
+    fertilization_events = []
+    
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=29)
+    
+    # Valores base en una unidad hipotética, ej: ppm
+    n_base, p_base, k_base = 120.0, 50.0, 100.0
+
+    current_date = start_date
+    while current_date <= end_date:
+        dates.append(current_date.isoformat())
+        
+        # Simula el consumo de nutrientes por la planta
+        n_base -= random.uniform(1, 3)
+        p_base -= random.uniform(0.5, 2)
+        k_base -= random.uniform(1, 2.5)
+        
+        # Simula un evento de fertilización cada 10 días
+        if current_date.day % 10 == 1 and current_date.day != 1: # Evita el día 1 para que no siempre sea el primero
+            n_base, p_base, k_base = 120.0, 50.0, 100.0 # Restablece los valores
+            fertilization_events.append(current_date.isoformat())
+
+        # Añade ruido aleatorio y asegura que no bajen de cero
+        nitrogen.append(round(max(0, n_base + random.uniform(-5, 5)), 2))
+        phosphorus.append(round(max(0, p_base + random.uniform(-3, 3)), 2))
+        potassium.append(round(max(0, k_base + random.uniform(-5, 5)), 2))
+
+        current_date += timedelta(days=1)
+        
+    return jsonify({
+        'dates': dates,
+        'nitrogen': nitrogen,
+        'phosphorus': phosphorus,
+        'potassium': potassium,
+        'fertilization_events': fertilization_events
+    })

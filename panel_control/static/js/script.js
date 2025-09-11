@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      <h2 class="weather-temp">${weatherData.temperature}°C</h2>
                      <p>Humedad: ${weatherData.humidity}%</p>
                      <p>Velocidad del viento: ${weatherData.wind_speed} m/s</p>
-                     <button id="search-again-btn">Buscar de Nuevo</button>
+                     <button id="search-again-btn">Cambiar Ubicacion</button>
                 </div>`;
             weatherContainer.innerHTML = resultsHTML;
         } catch (error) {
@@ -210,6 +210,18 @@ document.addEventListener('DOMContentLoaded', () => {
                                     style: { color: '#FFF', background: '#FEB019' },
                                     text: 'Inicio de Estrés'
                                 }
+                            },
+                            {
+                                y: 40,
+                                y2: 55,
+                                borderColor: '#fe2819ff',
+                                fillColor: '#fe2819ff',
+                                opacity: 0.1,
+                                label: {
+                                    borderColor: '#fe2819ff',
+                                    style: { color: '#FFF', background: '#fe2819ff' },
+                                    text: 'Peligro de Estrés Extremo'
+                                }
                             }
                         ]
                     }
@@ -290,6 +302,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetchAndUpdateData();
         setInterval(fetchAndUpdateData, 5000);
+    }
+
+    const fertilizerChartContainer = document.getElementById('fertilizer-chart-container');
+    if (fertilizerChartContainer) {
+        
+        const fertilizerOptions = {
+            chart: { type: 'line', height: '95%', background: 'transparent', toolbar: { show: true } },
+            theme: { mode: 'dark', palette: 'palette3' },
+            stroke: { curve: 'smooth', width: 3 },
+            series: [],
+            xaxis: { type: 'datetime', categories: [] },
+            yaxis: { title: { text: 'Nivel de Nutrientes (ppm)' } },
+            tooltip: { x: { format: 'dd MMM yyyy' } },
+            grid: { borderColor: '#55555533' },
+            legend: { position: 'top', horizontalAlign: 'left' },
+            noData: { text: 'Cargando datos del sensor...' }
+        };
+
+        const fertilizerChart = new ApexCharts(document.querySelector("#fertilizer-chart"), fertilizerOptions);
+        fertilizerChart.render();
+
+        const fetchFertilizerData = async () => {
+            try {
+                const response = await fetch('/get_fertilizer_data');
+                const data = await response.json();
+
+                const fertilizationAnnotations = data.fertilization_events.map(eventDate => {
+                    const date = new Date(eventDate);
+                    date.setHours(0, 0, 0, 0);
+                    const startTime = date.getTime();
+                    date.setHours(23, 59, 59, 999);
+                    const endTime = date.getTime();
+                    return {
+                        x: startTime, x2: endTime, fillColor: '#FEB019', opacity: 0.15,
+                        label: { text: 'Fertilización', style: { background: '#FEB019', color: '#fff', fontSize: '10px' }, offsetY: 10 }
+                    };
+                });
+
+                fertilizerChart.updateOptions({
+                    xaxis: { categories: data.dates },
+                    annotations: { xaxis: fertilizationAnnotations }
+                });
+
+                fertilizerChart.updateSeries([
+                    { name: 'Nitrógeno (N)', data: data.nitrogen },
+                    { name: 'Fósforo (P)', data: data.phosphorus },
+                    { name: 'Potasio (K)', data: data.potassium }
+                ]);
+
+            } catch (error) {
+                console.error("Fallo al obtener datos de fertilizantes:", error);
+            }
+        };
+
+        fetchFertilizerData();
+        setInterval(fetchFertilizerData, 5000);
     }
 });
 
