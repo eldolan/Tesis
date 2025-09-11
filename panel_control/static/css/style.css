@@ -391,9 +391,9 @@ form:has(div.user-box) {
 @media screen and (max-width: 1535px) {
     .grid-container {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         height: calc(100vh - 16em);
-        grid-template-rows: 1fr 2fr;
+        grid-template-rows: repeat(4, 1fr);
         gap: 1em;
         grid-template-areas: 
         "box1 box1 box1"
