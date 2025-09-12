@@ -3,6 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import random
+from .models import LecturaRiego, LecturaFertilizante
 
 db = SQLAlchemy()
 
@@ -16,7 +17,6 @@ def create_app():
 
     with app.app_context():
         from . import routes
-        from .models import LecturaRiego, LecturaFertilizante
 
         db.create_all()
         seed_adminpanel()
