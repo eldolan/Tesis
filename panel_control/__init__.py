@@ -49,24 +49,24 @@ def seed_adminpanel():
         )
         db.session.add(leyendo_riego)
 
-        n, p, k = 120.0, 50.0, 100.0
-        
-        for i in range(60):
-            date = datetime.now() - timedelta(days=59 - i)
-            evento_fertilizacion = (i == 0)
+    n, p, k = 120.0, 50.0, 100.0
+    
+    for i in range(60):
+        date = datetime.now() - timedelta(days=59 - i)
+        evento_fertilizacion = (i == 0)
 
-            if not evento_fertilizacion:
-                n -= 0.1
-                p -= 0.05
-                k -= 0.1
+        if not evento_fertilizacion:
+            n -= 0.1
+            p -= 0.05
+            k -= 0.1
 
-                reading = LecturaFertilizante(
-                    timestamp=date,
-                    nitrogen=round(max(0, n + random.uniform(-1, 1)), 2),
-                    phosphorus=round(max(0, p + random.uniform(-0.5, 0.5)), 2),
-                    potassium=round(max(0, k + random.uniform(-1, 1)), 2),
-                    es_evento_fertilizacion = evento_fertilizacion
-                )
-                db.session.add(reading)
-        db.session.commit()
-        print("Datos de ejemplo llenados exitosamente.")
+            reading = LecturaFertilizante(
+                timestamp=date,
+                nitrogen=round(max(0, n + random.uniform(-1, 1)), 2),
+                phosphorus=round(max(0, p + random.uniform(-0.5, 0.5)), 2),
+                potassium=round(max(0, k + random.uniform(-1, 1)), 2),
+                es_evento_fertilizacion = evento_fertilizacion
+            )
+            db.session.add(reading)
+    db.session.commit()
+    print("Datos de ejemplo llenados exitosamente.")
