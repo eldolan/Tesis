@@ -317,7 +317,24 @@ document.addEventListener('DOMContentLoaded', () => {
             tooltip: { x: { format: 'dd MMM yyyy' } },
             grid: { borderColor: '#55555533' },
             legend: { position: 'top', horizontalAlign: 'left' },
-            noData: { text: 'Cargando datos del sensor...' }
+            noData: { text: 'Cargando datos del sensor...' },
+            responsive: [{
+                breakpoint: 750,
+                options: {
+                    legend: {
+                        position: 'bottom',
+                        horizontalAlign: 'center',
+                        offsetY: 5
+                    },
+                    chart: {
+                        toolbar: {
+                           tools: {
+                                download: false
+                           }
+                        }
+                    }
+                },
+            }]
         };
 
         const fertilizerChart = new ApexCharts(document.querySelector("#fertilizer-chart"), fertilizerOptions);
