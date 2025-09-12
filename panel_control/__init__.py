@@ -16,7 +16,9 @@ def create_app():
     db.init_app(app)
     
     def seed_adminpanel():
+
         from .models import LecturaRiego, LecturaFertilizante
+
         if LecturaRiego.query.first() is not None:
             print("La base de datos ya tiene datos.")
             return
@@ -24,13 +26,18 @@ def create_app():
         print("Creando datos de ejemplo en la base de datos...")
 
         valor_base = 95.0
+
         for i in range(30):
+
             date = datetime.now() - timedelta(days=29 - i)
+
             evento_riego = (i % 4 == 0)
 
             if evento_riego:
+
                 valor_base = 95.0 + random.uniform(-2, 2)
             else:
+
                 valor_base -= (random.random() * 1.5) + 0.5
 
             leyendo_riego = LecturaRiego(
@@ -45,7 +52,9 @@ def create_app():
         n, p, k = 120.0, 50.0, 100.0
         
         for i in range(60):
+
             date = datetime.now() - timedelta(days=59 - i)
+
             evento_fertilizacion = (i == 0)
 
             if not evento_fertilizacion:
@@ -61,13 +70,16 @@ def create_app():
                     es_evento_fertilizacion = evento_fertilizacion
                 )
                 db.session.add(reading)
+
         db.session.commit()
+
         print("Datos de ejemplo llenados exitosamente.")
+
     with app.app_context():
         from . import routes
 
         db.create_all()
-        seed_adminpanel()
 
+        seed_adminpanel()
     return app
 

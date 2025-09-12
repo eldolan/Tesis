@@ -377,7 +377,7 @@ form:has(div.user-box) {
     color: #ffffff;
 }
 
-#chart {
+#chart  #fertilizer-chart {
     flex-grow: 1;
     min-height: 0;
     align-content: 0;
@@ -475,11 +475,11 @@ form:has(div.user-box) {
     .weather-results .weather-temp {
         font-size: 2.2rem;
     }
-    #irrigation-chart-container {
+    #irrigation-chart-container #fertilizer-chart-container {
         min-height: 60vh;
         padding-bottom: 0;
     }
-    #chart {
+    #chart #fertilizer-chart {
         padding-bottom: 1.5em;
     }
 }
