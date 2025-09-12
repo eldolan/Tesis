@@ -7,7 +7,7 @@ class LecturaRiego(db.Model):
     sensor_20cm = db.Column(db.Float, nullable=False)
     sensor_40cm = db.Column(db.Float, nullable=False)
     sensor_60cm = db.Column(db.Float, nullable=False)
-    is_irrigation_event = db.Column(db.Boolean, default=False)
+    es_evento_riego = db.Column(db.Boolean, default=False)
 
 class LecturaFertilizante(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -15,4 +15,4 @@ class LecturaFertilizante(db.Model):
     nitrogen = db.Column(db.Float, nullable=False)
     phosphorus = db.Column(db.Float, nullable=False)
     potassium = db.Column(db.Float, nullable=False)
-    is_fertilization_event = db.Column(db.Boolean, default=False)
+    es_evento_fertilizacion = db.Column(db.Boolean, default=False)

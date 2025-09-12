@@ -49,7 +49,6 @@ def seed_adminpanel():
         )
         db.session.add(leyendo_riego)
 
-        fecha_fertilizacion = datetime.now() - timedelta(days=59)
         n, p, k = 120.0, 50.0, 100.0
         
         for i in range(60):
