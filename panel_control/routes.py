@@ -207,26 +207,32 @@ def upload_sensor_data():
                 phosphorus = float(phosphorus)
                 potassium = float(potassium)
                 
-                # Crear lectura de riego basada en humedad (simulando sensores de profundidad)
-                # Convertir humedad a valores de sensores de riego
-                sensor_20cm = humid * 0.95  # Superficie más seca
-                sensor_40cm = humid * 1.0   # Valor base
-                sensor_60cm = humid * 1.05  # Profundidad más húmeda
+                # Crear lectura de riego usando humedad real del sensor
+                # La humedad del suelo se simula en 3 profundidades basada en la humedad real
+                base_humidity = max(humid, 0.1)  # Evitar valores extremadamente bajos
+                
+                # Simulación realista de sensores a diferentes profundidades
+                # Superficie (20cm): más variable, puede ser más seca
+                # Profundidad media (40cm): valor base del sensor
+                # Profundidad mayor (60cm): más estable, ligeramente más húmeda
+                sensor_20cm = base_humidity * 0.85  # Superficie más seca
+                sensor_40cm = base_humidity * 1.0   # Valor del sensor real
+                sensor_60cm = base_humidity * 1.15  # Profundidad más húmeda
                 
                 lectura_riego = LecturaRiego(
                     timestamp=timestamp,
-                    sensor_20cm=round(sensor_20cm, 2),
-                    sensor_40cm=round(sensor_40cm, 2),
-                    sensor_60cm=round(sensor_60cm, 2),
+                    sensor_20cm=round(max(sensor_20cm, 0), 2),
+                    sensor_40cm=round(max(sensor_40cm, 0), 2), 
+                    sensor_60cm=round(max(sensor_60cm, 0), 2),
                     es_evento_riego=False  # Los eventos de riego se marcan manualmente
                 )
                 
-                # Crear lectura de fertilizante
+                # Crear lectura de fertilizante (NPK puede ser 0, es normal)
                 lectura_fertilizante = LecturaFertilizante(
                     timestamp=timestamp,
-                    nitrogen=round(nitrogen, 2),
-                    phosphorus=round(phosphorus, 2),
-                    potassium=round(potassium, 2),
+                    nitrogen=round(max(nitrogen, 0), 2),
+                    phosphorus=round(max(phosphorus, 0), 2),
+                    potassium=round(max(potassium, 0), 2),
                     es_evento_fertilizacion=False  # Los eventos se marcan manualmente
                 )
                 
