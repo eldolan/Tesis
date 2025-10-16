@@ -4,6 +4,13 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import random
 
+# Cargar variables de entorno desde archivo .env si existe
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv no está instalado, usar variables del sistema
+
 
 db = SQLAlchemy()
 

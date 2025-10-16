@@ -5,9 +5,58 @@ from datetime import datetime, timedelta
 import requests
 import os
 import json
+import csv
+from io import StringIO
+import hashlib
+import hmac
+from functools import wraps
+from collections import defaultdict
+import time
 from .models import LecturaRiego, LecturaFertilizante
+from . import db
 
 API_KEY = os.environ.get('OPENWEATHER_API_KEY')
+SENSOR_API_KEY = os.environ.get('SENSOR_API_KEY', 'default-sensor-key-change-me')
+MAX_FILE_SIZE = 1024 * 1024  # 1MB
+
+# Rate limiting storage (in production, use Redis or database)
+rate_limit_storage = defaultdict(list)
+
+def check_rate_limit(ip_address, max_requests=10, time_window=60):
+    """Check if IP has exceeded rate limit"""
+    current_time = time.time()
+    requests_in_window = rate_limit_storage[ip_address]
+    
+    # Clean old requests outside time window
+    rate_limit_storage[ip_address] = [req_time for req_time in requests_in_window 
+                                      if current_time - req_time < time_window]
+    
+    # Check if limit exceeded
+    if len(rate_limit_storage[ip_address]) >= max_requests:
+        return False
+    
+    # Add current request
+    rate_limit_storage[ip_address].append(current_time)
+    return True
+
+def validate_api_key(provided_key):
+    """Validate API key using secure comparison"""
+    if not provided_key or not SENSOR_API_KEY:
+        return False
+    return hmac.compare_digest(provided_key, SENSOR_API_KEY)
+
+def require_api_key(f):
+    """Decorator to require API key authentication"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key') or request.form.get('api_key')
+        
+        if not validate_api_key(api_key):
+            app.logger.warning(f"Unauthorized upload attempt from {request.remote_addr}")
+            return jsonify({'error': 'API key requerida o inválida'}), 401
+        
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/')
 def home():
@@ -82,3 +131,136 @@ def get_fertilizer_data():
         'potassium': [r.potassium for r in readings],
         'fertilization_events': [r.timestamp.isoformat() for r in readings if r.es_evento_fertilizacion]
     })
+
+@app.route('/upload', methods=['POST'])
+@require_api_key
+def upload_sensor_data():
+    """Endpoint para recibir datos CSV de sensores desde laptop externa"""
+    
+    # Rate limiting check
+    client_ip = request.remote_addr
+    if not check_rate_limit(client_ip):
+        app.logger.warning(f"Rate limit exceeded for IP {client_ip}")
+        return jsonify({'error': 'Demasiadas peticiones. Inténtalo más tarde.'}), 429
+    
+    if 'file' not in request.files:
+        app.logger.warning(f"Upload attempt without file from {client_ip}")
+        return jsonify({'error': 'No se encontró archivo en la petición'}), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No se seleccionó ningún archivo'}), 400
+    
+    if not file.filename.lower().endswith('.csv'):
+        return jsonify({'error': 'El archivo debe ser de tipo CSV'}), 400
+    
+    # Check file size
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)  # Reset file pointer
+    
+    if file_size > MAX_FILE_SIZE:
+        app.logger.warning(f"File too large ({file_size} bytes) from {client_ip}")
+        return jsonify({'error': f'Archivo demasiado grande. Máximo permitido: {MAX_FILE_SIZE // 1024}KB'}), 400
+    
+    if file_size == 0:
+        return jsonify({'error': 'El archivo está vacío'}), 400
+    
+    try:
+        # Leer el contenido del archivo CSV
+        stream = StringIO(file.stream.read().decode("UTF-8"), newline=None)
+        csv_reader = csv.reader(stream)
+        
+        # Leer el encabezado
+        header = next(csv_reader, None)
+        
+        if not header or len(header) != 8:
+            return jsonify({'error': 'Formato CSV inválido. Se esperan 8 columnas.'}), 400
+        
+        expected_header = ['timestamp', 'temperatura_c', 'humedad_rh', 'conductividad_us_cm', 
+                          'ph', 'nitrogeno_mg_kg', 'fosforo_mg_kg', 'potasio_mg_kg']
+        
+        if header != expected_header:
+            return jsonify({'error': f'Encabezado CSV inválido. Se esperaba: {expected_header}'}), 400
+        
+        # Procesar cada fila de datos
+        rows_processed = 0
+        errors = []
+        
+        for row_num, row in enumerate(csv_reader, start=2):
+            try:
+                if len(row) != 8:
+                    errors.append(f'Fila {row_num}: número incorrecto de columnas')
+                    continue
+                
+                # Parsear timestamp
+                timestamp_str, temp, humid, conduct, ph_val, nitrogen, phosphorus, potassium = row
+                timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                
+                # Convertir valores numéricos
+                temp = float(temp)
+                humid = float(humid)
+                conduct = float(conduct)
+                ph_val = float(ph_val)
+                nitrogen = float(nitrogen)
+                phosphorus = float(phosphorus)
+                potassium = float(potassium)
+                
+                # Crear lectura de riego basada en humedad (simulando sensores de profundidad)
+                # Convertir humedad a valores de sensores de riego
+                sensor_20cm = humid * 0.95  # Superficie más seca
+                sensor_40cm = humid * 1.0   # Valor base
+                sensor_60cm = humid * 1.05  # Profundidad más húmeda
+                
+                lectura_riego = LecturaRiego(
+                    timestamp=timestamp,
+                    sensor_20cm=round(sensor_20cm, 2),
+                    sensor_40cm=round(sensor_40cm, 2),
+                    sensor_60cm=round(sensor_60cm, 2),
+                    es_evento_riego=False  # Los eventos de riego se marcan manualmente
+                )
+                
+                # Crear lectura de fertilizante
+                lectura_fertilizante = LecturaFertilizante(
+                    timestamp=timestamp,
+                    nitrogen=round(nitrogen, 2),
+                    phosphorus=round(phosphorus, 2),
+                    potassium=round(potassium, 2),
+                    es_evento_fertilizacion=False  # Los eventos se marcan manualmente
+                )
+                
+                # Verificar si ya existe una lectura con el mismo timestamp
+                existing_riego = LecturaRiego.query.filter_by(timestamp=timestamp).first()
+                existing_fertilizante = LecturaFertilizante.query.filter_by(timestamp=timestamp).first()
+                
+                if not existing_riego:
+                    db.session.add(lectura_riego)
+                if not existing_fertilizante:
+                    db.session.add(lectura_fertilizante)
+                
+                rows_processed += 1
+                
+            except ValueError as e:
+                errors.append(f'Fila {row_num}: error de conversión de datos - {str(e)}')
+            except Exception as e:
+                errors.append(f'Fila {row_num}: error inesperado - {str(e)}')
+        
+        # Guardar cambios en la base de datos
+        db.session.commit()
+        
+        response_data = {
+            'message': f'Archivo procesado exitosamente. {rows_processed} filas agregadas.',
+            'rows_processed': rows_processed
+        }
+        
+        if errors:
+            response_data['warnings'] = errors[:10]  # Limitar a 10 errores
+            response_data['total_errors'] = len(errors)
+        
+        app.logger.info(f"Successful data upload from {client_ip}: {rows_processed} rows processed")
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al procesar archivo CSV: {str(e)}'}), 500

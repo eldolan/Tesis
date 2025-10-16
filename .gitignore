@@ -4,3 +4,5 @@ __pycache__/
 .env
 Datos BD
 instance
+WARP.md
+sensor_client.py
