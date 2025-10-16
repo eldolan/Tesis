@@ -207,23 +207,24 @@ def upload_sensor_data():
                 phosphorus = float(phosphorus)
                 potassium = float(potassium)
                 
-                # Crear lectura de riego usando humedad real del sensor
-                # La humedad del suelo se simula en 3 profundidades basada en la humedad real
-                base_humidity = max(humid, 0.1)  # Evitar valores extremadamente bajos
+                # El sensor físico está ubicado a 20cm de profundidad
+                # Usar el valor real para 20cm y simular los otros sensores
+                sensor_20cm_real = max(humid, 0)  # Valor real del sensor a 20cm
                 
-                # Simulación realista de sensores a diferentes profundidades
-                # Superficie (20cm): más variable, puede ser más seca
-                # Profundidad media (40cm): valor base del sensor
-                # Profundidad mayor (60cm): más estable, ligeramente más húmeda
-                sensor_20cm = base_humidity * 0.85  # Superficie más seca
-                sensor_40cm = base_humidity * 1.0   # Valor del sensor real
-                sensor_60cm = base_humidity * 1.15  # Profundidad más húmeda
+                # Simular sensores a otras profundidades basado en el comportamiento típico del suelo:
+                # 40cm: ligeramente más húmedo que la superficie
+                # 60cm: más húmedo y estable en profundidad
+                sensor_40cm_sim = sensor_20cm_real * 1.2   # 20% más húmedo
+                sensor_60cm_sim = sensor_20cm_real * 1.4   # 40% más húmedo
                 
                 lectura_riego = LecturaRiego(
                     timestamp=timestamp,
-                    sensor_20cm=round(max(sensor_20cm, 0), 2),
-                    sensor_40cm=round(max(sensor_40cm, 0), 2), 
-                    sensor_60cm=round(max(sensor_60cm, 0), 2),
+                    sensor_20cm=round(sensor_20cm_real, 2),
+                    sensor_40cm=round(sensor_40cm_sim, 2), 
+                    sensor_60cm=round(sensor_60cm_sim, 2),
+                    temperatura_c=round(temp, 2),
+                    conductividad_us_cm=round(conduct, 2),
+                    ph=round(ph_val, 2),
                     es_evento_riego=False  # Los eventos de riego se marcan manualmente
                 )
                 
@@ -270,3 +271,50 @@ def upload_sensor_data():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Error al procesar archivo CSV: {str(e)}'}), 500
+
+@app.route('/admin/migrate')
+def migrate_database():
+    """Endpoint para ejecutar migración de base de datos remotamente"""
+    try:
+        import sqlite3
+        
+        # Conectar a la base de datos
+        db_path = app.config.get('SQLALCHEMY_DATABASE_URI', '').replace('sqlite:///', '')
+        if not db_path or not os.path.exists(db_path):
+            return jsonify({'error': 'Base de datos no encontrada'}), 404
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Verificar columnas actuales
+        cursor.execute("PRAGMA table_info(lectura_riego)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        results = {'existing_columns': columns, 'added_columns': [], 'errors': []}
+        
+        # Añadir nuevas columnas si no existen
+        new_columns = [
+            ('temperatura_c', 'FLOAT'),
+            ('conductividad_us_cm', 'FLOAT'), 
+            ('ph', 'FLOAT')
+        ]
+        
+        for column_name, column_type in new_columns:
+            if column_name not in columns:
+                try:
+                    cursor.execute(f"ALTER TABLE lectura_riego ADD COLUMN {column_name} {column_type}")
+                    results['added_columns'].append(column_name)
+                except sqlite3.Error as e:
+                    results['errors'].append(f"Error añadiendo {column_name}: {str(e)}")
+        
+        conn.commit()
+        conn.close()
+        
+        # Recrear las tablas con SQLAlchemy para sincronizar
+        db.create_all()
+        
+        results['message'] = 'Migración completada'
+        return jsonify(results)
+        
+    except Exception as e:
+        return jsonify({'error': f'Error durante la migración: {str(e)}'}), 500
