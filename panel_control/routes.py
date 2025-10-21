@@ -12,7 +12,7 @@ import hmac
 from functools import wraps
 from collections import defaultdict
 import time
-from .models import LecturaRiego, LecturaFertilizante
+from .models import SensorRiego20, SensorRiego40, SensorRiego60, SensorFertilizante
 from . import db
 
 API_KEY = os.environ.get('OPENWEATHER_API_KEY')
@@ -110,26 +110,59 @@ def get_weather_data():
 
 @app.route('/get_irrigation_data')
 def get_irrigation_data():
-    readings = LecturaRiego.query.order_by(LecturaRiego.timestamp.asc()).all()
+    # Consultar datos de todos los sensores físicos
+    readings_20 = SensorRiego20.query.order_by(SensorRiego20.timestamp.asc()).all()
+    readings_40 = SensorRiego40.query.order_by(SensorRiego40.timestamp.asc()).all()
+    readings_60 = SensorRiego60.query.order_by(SensorRiego60.timestamp.asc()).all()
+    
+    # Crear un diccionario unificado de timestamps
+    all_timestamps = set()
+    for readings in [readings_20, readings_40, readings_60]:
+        all_timestamps.update([r.timestamp for r in readings])
+    all_timestamps = sorted(all_timestamps)
+    
+    # Mapear datos por timestamp
+    data_20 = {r.timestamp: r for r in readings_20}
+    data_40 = {r.timestamp: r for r in readings_40}
+    data_60 = {r.timestamp: r for r in readings_60}
+    
+    irrigation_events = []
+    sensor1_data = []
+    sensor2_data = []
+    sensor3_data = []
+    
+    for ts in all_timestamps:
+        # Sensor 1 (20cm): usar datos reales si existen
+        sensor1_data.append(data_20[ts].humedad if ts in data_20 else None)
+        
+        # Sensores 2 y 3 (40cm, 60cm): usar datos reales si existen, sino null
+        sensor2_data.append(data_40[ts].humedad if ts in data_40 else None)
+        sensor3_data.append(data_60[ts].humedad if ts in data_60 else None)
+        
+        # Recoger eventos de riego de cualquier sensor que tenga datos
+        if ((ts in data_20 and data_20[ts].es_evento_riego) or 
+            (ts in data_40 and data_40[ts].es_evento_riego) or 
+            (ts in data_60 and data_60[ts].es_evento_riego)):
+            irrigation_events.append(ts.isoformat())
     
     return jsonify({
-        'dates': [r.timestamp.isoformat() for r in readings],
-        'sensor1': [r.sensor_20cm for r in readings],
-        'sensor2': [r.sensor_40cm for r in readings],
-        'sensor3': [r.sensor_60cm for r in readings],
-        'irrigation_events': [r.timestamp.isoformat() for r in readings if r.es_evento_riego]
+        'dates': [ts.isoformat() for ts in all_timestamps],
+        'sensor1': sensor1_data,  # Sensor 20cm 
+        'sensor2': sensor2_data,  # Sensor 40cm
+        'sensor3': sensor3_data,  # Sensor 60cm
+        'irrigation_events': irrigation_events
     })
 
 @app.route('/get_fertilizer_data')
 def get_fertilizer_data():
-    readings = LecturaFertilizante.query.order_by(LecturaFertilizante.timestamp.asc()).all()
+    readings = SensorFertilizante.query.order_by(SensorFertilizante.timestamp.asc()).all()
 
     return jsonify({
         'dates': [r.timestamp.isoformat() for r in readings],
         'nitrogen': [r.nitrogen for r in readings],
         'phosphorus': [r.phosphorus for r in readings],
         'potassium': [r.potassium for r in readings],
-        'fertilization_events': [r.timestamp.isoformat() for r in readings if r.es_evento_fertilizacion]
+        'fertilization_events': []  # Sin eventos automáticos en la nueva estructura
     })
 
 @app.route('/upload', methods=['POST'])
@@ -175,11 +208,12 @@ def upload_sensor_data():
         # Leer el encabezado
         header = next(csv_reader, None)
         
-        if not header or len(header) != 8:
-            return jsonify({'error': 'Formato CSV inválido. Se esperan 8 columnas.'}), 400
+        if not header or len(header) != 14:  # 13 columnas de datos + 1 timestamp
+            return jsonify({'error': 'Formato CSV inválido. Se esperan 14 columnas (timestamp + 13 datos).'}), 400
         
-        expected_header = ['timestamp', 'temperatura_c', 'humedad_rh', 'conductividad_us_cm', 
-                          'ph', 'nitrogeno_mg_kg', 'fosforo_mg_kg', 'potasio_mg_kg']
+        expected_header = ['timestamp', 'Temp_20cm', 'Hum_20cm', 'Cond_20cm', 'PH_20cm', 
+                          'N_20cm', 'P_20cm', 'K_20cm', 'Temp_40cm', 'Hum_40cm', 
+                          'Cond_40cm', 'Temp_60cm', 'Hum_60cm', 'PH_60cm']
         
         if header != expected_header:
             return jsonify({'error': f'Encabezado CSV inválido. Se esperaba: {expected_header}'}), 400
@@ -190,61 +224,87 @@ def upload_sensor_data():
         
         for row_num, row in enumerate(csv_reader, start=2):
             try:
-                if len(row) != 8:
+                if len(row) != 14:
                     errors.append(f'Fila {row_num}: número incorrecto de columnas')
                     continue
                 
-                # Parsear timestamp
-                timestamp_str, temp, humid, conduct, ph_val, nitrogen, phosphorus, potassium = row
+                # Parsear todas las columnas del nuevo formato
+                (timestamp_str, temp_20, hum_20, cond_20, ph_20, n_20, p_20, k_20,
+                 temp_40, hum_40, cond_40, temp_60, hum_60, ph_60) = row
+                
                 timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
                 
-                # Convertir valores numéricos
-                temp = float(temp)
-                humid = float(humid)
-                conduct = float(conduct)
-                ph_val = float(ph_val)
-                nitrogen = float(nitrogen)
-                phosphorus = float(phosphorus)
-                potassium = float(potassium)
+                # Convertir valores numéricos para sensor 20cm
+                temp_20 = float(temp_20) if temp_20 not in ['', '-999', '-999.0'] else None
+                hum_20 = float(hum_20) if hum_20 not in ['', '-999', '-999.0'] else None
+                cond_20 = float(cond_20) if cond_20 not in ['', '-999', '-999.0'] else None
+                ph_20 = float(ph_20) if ph_20 not in ['', '-999', '-999.0'] else None
+                n_20 = float(n_20) if n_20 not in ['', '-999', '-999.0'] else 0.0
+                p_20 = float(p_20) if p_20 not in ['', '-999', '-999.0'] else 0.0
+                k_20 = float(k_20) if k_20 not in ['', '-999', '-999.0'] else 0.0
                 
-                # El sensor físico está ubicado a 20cm de profundidad
-                # Usar el valor real para 20cm y simular los otros sensores
-                sensor_20cm_real = max(humid, 0)  # Valor real del sensor a 20cm
+                # Convertir valores numéricos para sensor 40cm
+                temp_40 = float(temp_40) if temp_40 not in ['', '-999', '-999.0'] else None
+                hum_40 = float(hum_40) if hum_40 not in ['', '-999', '-999.0'] else None
+                cond_40 = float(cond_40) if cond_40 not in ['', '-999', '-999.0'] else None
                 
-                # Simular sensores a otras profundidades basado en el comportamiento típico del suelo:
-                # 40cm: ligeramente más húmedo que la superficie
-                # 60cm: más húmedo y estable en profundidad
-                sensor_40cm_sim = sensor_20cm_real * 1.2   # 20% más húmedo
-                sensor_60cm_sim = sensor_20cm_real * 1.4   # 40% más húmedo
+                # Convertir valores numéricos para sensor 60cm
+                temp_60 = float(temp_60) if temp_60 not in ['', '-999', '-999.0'] else None
+                hum_60 = float(hum_60) if hum_60 not in ['', '-999', '-999.0'] else None
+                ph_60 = float(ph_60) if ph_60 not in ['', '-999', '-999.0'] else None
                 
-                lectura_riego = LecturaRiego(
+                # Crear registro para sensor de 20cm (datos reales)
+                if all(v is not None for v in [temp_20, hum_20, cond_20, ph_20]):
+                    sensor_20cm = SensorRiego20(
+                        timestamp=timestamp,
+                        temperatura_c=round(temp_20, 2),
+                        humedad=round(max(hum_20, 0), 2),
+                        conductividad_us_cm=round(cond_20, 2),
+                        ph=round(ph_20, 2),
+                        es_evento_riego=False
+                    )
+                    existing_20 = SensorRiego20.query.filter_by(timestamp=timestamp).first()
+                    if not existing_20:
+                        db.session.add(sensor_20cm)
+                
+                # Crear registro para sensor de 40cm (datos reales)
+                if all(v is not None for v in [temp_40, hum_40, cond_40]):
+                    sensor_40cm = SensorRiego40(
+                        timestamp=timestamp,
+                        temperatura_c=round(temp_40, 2),
+                        humedad=round(max(hum_40, 0), 2),
+                        conductividad_us_cm=round(cond_40, 2),
+                        ph=round(ph_20, 2),  # pH del sensor de 20cm (no tiene pH propio)
+                        es_evento_riego=False
+                    )
+                    existing_40 = SensorRiego40.query.filter_by(timestamp=timestamp).first()
+                    if not existing_40:
+                        db.session.add(sensor_40cm)
+                
+                # Crear registro para sensor de 60cm (datos reales)
+                if all(v is not None for v in [temp_60, hum_60, ph_60]):
+                    sensor_60cm = SensorRiego60(
+                        timestamp=timestamp,
+                        temperatura_c=round(temp_60, 2),
+                        humedad=round(max(hum_60, 0), 2),
+                        conductividad_us_cm=round(cond_20, 2),  # No tiene EC propio, usar del 20cm
+                        ph=round(ph_60, 2),
+                        es_evento_riego=False
+                    )
+                    existing_60 = SensorRiego60.query.filter_by(timestamp=timestamp).first()
+                    if not existing_60:
+                        db.session.add(sensor_60cm)
+                
+                # Crear registro de fertilizante (NPK del sensor de 20cm)
+                sensor_fertilizante = SensorFertilizante(
                     timestamp=timestamp,
-                    sensor_20cm=round(sensor_20cm_real, 2),
-                    sensor_40cm=round(sensor_40cm_sim, 2), 
-                    sensor_60cm=round(sensor_60cm_sim, 2),
-                    temperatura_c=round(temp, 2),
-                    conductividad_us_cm=round(conduct, 2),
-                    ph=round(ph_val, 2),
-                    es_evento_riego=False  # Los eventos de riego se marcan manualmente
+                    nitrogen=round(n_20, 2),
+                    phosphorus=round(p_20, 2),
+                    potassium=round(k_20, 2)
                 )
-                
-                # Crear lectura de fertilizante (NPK puede ser 0, es normal)
-                lectura_fertilizante = LecturaFertilizante(
-                    timestamp=timestamp,
-                    nitrogen=round(max(nitrogen, 0), 2),
-                    phosphorus=round(max(phosphorus, 0), 2),
-                    potassium=round(max(potassium, 0), 2),
-                    es_evento_fertilizacion=False  # Los eventos se marcan manualmente
-                )
-                
-                # Verificar si ya existe una lectura con el mismo timestamp
-                existing_riego = LecturaRiego.query.filter_by(timestamp=timestamp).first()
-                existing_fertilizante = LecturaFertilizante.query.filter_by(timestamp=timestamp).first()
-                
-                if not existing_riego:
-                    db.session.add(lectura_riego)
-                if not existing_fertilizante:
-                    db.session.add(lectura_fertilizante)
+                existing_fert = SensorFertilizante.query.filter_by(timestamp=timestamp).first()
+                if not existing_fert:
+                    db.session.add(sensor_fertilizante)
                 
                 rows_processed += 1
                 

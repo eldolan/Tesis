@@ -24,9 +24,9 @@ def create_app():
     
     def seed_adminpanel():
 
-        from .models import LecturaRiego, LecturaFertilizante
+        from .models import SensorRiego20, SensorRiego40, SensorRiego60, SensorFertilizante
 
-        if LecturaRiego.query.first() is not None:
+        if SensorRiego20.query.first() is not None:
             print("La base de datos ya tiene datos.")
             return
     
@@ -35,51 +35,49 @@ def create_app():
         valor_base = 95.0
 
         for i in range(30):
-
             date = datetime.now() - timedelta(days=29 - i)
-
             evento_riego = (i % 4 == 0)
 
             if evento_riego:
-
                 valor_base = 95.0 + random.uniform(-2, 2)
             else:
-
                 valor_base -= (random.random() * 1.5) + 0.5
 
-            leyendo_riego = LecturaRiego(
+            # Crear datos de ejemplo para sensor de 20cm
+            sensor_20cm = SensorRiego20(
                 timestamp=date,
-                sensor_20cm=round(max(0, valor_base), 2),
-                sensor_40cm=round(max(0, valor_base - 2), 2),
-                sensor_60cm=round(max(0, valor_base - 5), 2),
-                es_evento_riego = evento_riego
+                temperatura_c=round(20.0 + random.uniform(-3, 8), 2),
+                humedad=round(max(0, valor_base), 2),
+                conductividad_us_cm=round(800 + random.uniform(-100, 200), 2),
+                ph=round(6.5 + random.uniform(-0.5, 1.0), 2),
+                es_evento_riego=evento_riego
             )
-            db.session.add(leyendo_riego)
+            
+            db.session.add(sensor_20cm)
+            
+            # NOTA: Las tablas SensorRiego40 y SensorRiego60 están listas para 
+            # futuros sensores físicos. No se crean datos de ejemplo para ellas.
 
+        # Datos de fertilizante
         n, p, k = 120.0, 50.0, 100.0
         
         for i in range(60):
-
             date = datetime.now() - timedelta(days=59 - i)
 
-            evento_fertilizacion = (i == 0)
-
-            if not evento_fertilizacion:
+            if i > 0:  # Degradación gradual después del primer día
                 n -= 0.1
                 p -= 0.05
                 k -= 0.1
 
-                reading = LecturaFertilizante(
-                    timestamp=date,
-                    nitrogen=round(max(0, n + random.uniform(-1, 1)), 2),
-                    phosphorus=round(max(0, p + random.uniform(-0.5, 0.5)), 2),
-                    potassium=round(max(0, k + random.uniform(-1, 1)), 2),
-                    es_evento_fertilizacion = evento_fertilizacion
-                )
-                db.session.add(reading)
+            sensor_fert = SensorFertilizante(
+                timestamp=date,
+                nitrogen=round(max(0, n + random.uniform(-1, 1)), 2),
+                phosphorus=round(max(0, p + random.uniform(-0.5, 0.5)), 2),
+                potassium=round(max(0, k + random.uniform(-1, 1)), 2)
+            )
+            db.session.add(sensor_fert)
 
         db.session.commit()
-
         print("Datos de ejemplo llenados exitosamente.")
 
     with app.app_context():
