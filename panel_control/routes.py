@@ -162,7 +162,7 @@ def get_fertilizer_data():
         'nitrogen': [r.nitrogen for r in readings],
         'phosphorus': [r.phosphorus for r in readings],
         'potassium': [r.potassium for r in readings],
-        'fertilization_events': []  # Sin eventos automáticos en la nueva estructura
+        'fertilization_events': []
     })
 
 @app.route('/upload', methods=['POST'])
@@ -331,50 +331,3 @@ def upload_sensor_data():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Error al procesar archivo CSV: {str(e)}'}), 500
-
-@app.route('/admin/migrate')
-def migrate_database():
-    """Endpoint para ejecutar migración de base de datos remotamente"""
-    try:
-        import sqlite3
-        
-        # Conectar a la base de datos
-        db_path = app.config.get('SQLALCHEMY_DATABASE_URI', '').replace('sqlite:///', '')
-        if not db_path or not os.path.exists(db_path):
-            return jsonify({'error': 'Base de datos no encontrada'}), 404
-        
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        # Verificar columnas actuales
-        cursor.execute("PRAGMA table_info(lectura_riego)")
-        columns = [column[1] for column in cursor.fetchall()]
-        
-        results = {'existing_columns': columns, 'added_columns': [], 'errors': []}
-        
-        # Añadir nuevas columnas si no existen
-        new_columns = [
-            ('temperatura_c', 'FLOAT'),
-            ('conductividad_us_cm', 'FLOAT'), 
-            ('ph', 'FLOAT')
-        ]
-        
-        for column_name, column_type in new_columns:
-            if column_name not in columns:
-                try:
-                    cursor.execute(f"ALTER TABLE lectura_riego ADD COLUMN {column_name} {column_type}")
-                    results['added_columns'].append(column_name)
-                except sqlite3.Error as e:
-                    results['errors'].append(f"Error añadiendo {column_name}: {str(e)}")
-        
-        conn.commit()
-        conn.close()
-        
-        # Recrear las tablas con SQLAlchemy para sincronizar
-        db.create_all()
-        
-        results['message'] = 'Migración completada'
-        return jsonify(results)
-        
-    except Exception as e:
-        return jsonify({'error': f'Error durante la migración: {str(e)}'}), 500
