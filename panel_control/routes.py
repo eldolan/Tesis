@@ -234,21 +234,21 @@ def upload_sensor_data():
                  temp_40, hum_40, cond_40, temp_60, hum_60, ph_60, onboard_temp, onboard_hum) = row
                 
                 timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
-                temp_20 = float(temp_20) if temp_20 not in ['', '-999', '-999.0'] else None
-                hum_20 = float(hum_20) if hum_20 not in ['', '-999', '-999.0'] else None
-                cond_20 = float(cond_20) if cond_20 not in ['', '-999', '-999.0'] else None
-                ph_20 = float(ph_20) if ph_20 not in ['', '-999', '-999.0'] else None
-                n_20 = float(n_20) if n_20 not in ['', '-999', '-999.0'] else 0.0
-                p_20 = float(p_20) if p_20 not in ['', '-999', '-999.0'] else 0.0
-                k_20 = float(k_20) if k_20 not in ['', '-999', '-999.0'] else 0.0
-                temp_40 = float(temp_40) if temp_40 not in ['', '-999', '-999.0'] else None
-                hum_40 = float(hum_40) if hum_40 not in ['', '-999', '-999.0'] else None
-                cond_40 = float(cond_40) if cond_40 not in ['', '-999', '-999.0'] else None
-                temp_60 = float(temp_60) if temp_60 not in ['', '-999', '-999.0'] else None
-                hum_60 = float(hum_60) if hum_60 not in ['', '-999', '-999.0'] else None
-                ph_60 = float(ph_60) if ph_60 not in ['', '-999', '-999.0'] else None
-                onboard_temp = float(onboard_temp) if onboard_temp not in ['', '-999', '-999.0'] else None
-                onboard_hum = float(onboard_hum) if onboard_hum not in ['', '-999', '-999.0'] else None
+                temp_20 = float(temp_20) if temp_20 not in ['', '-999', '-999.0', '-999.00'] else None
+                hum_20 = float(hum_20) if hum_20 not in ['', '-999', '-999.0', '-999.00'] else None
+                cond_20 = float(cond_20) if cond_20 not in ['', '-999', '-999.0', '-999.00'] else None
+                ph_20 = float(ph_20) if ph_20 not in ['', '-999', '-999.0', '-999.00'] else None
+                n_20 = float(n_20) if n_20 not in ['', '-999', '-999.0', '-999.00'] else 0.0
+                p_20 = float(p_20) if p_20 not in ['', '-999', '-999.0', '-999.00'] else 0.0
+                k_20 = float(k_20) if k_20 not in ['', '-999', '-999.0', '-999.00'] else 0.0
+                temp_40 = float(temp_40) if temp_40 not in ['', '-999', '-999.0', '-999.00'] else None
+                hum_40 = float(hum_40) if hum_40 not in ['', '-999', '-999.0', '-999.00'] else None
+                cond_40 = float(cond_40) if cond_40 not in ['', '-999', '-999.0', '-999.00'] else None
+                temp_60 = float(temp_60) if temp_60 not in ['', '-999', '-999.0', '-999.00'] else None
+                hum_60 = float(hum_60) if hum_60 not in ['', '-999', '-999.0', '-999.00'] else None
+                ph_60 = float(ph_60) if ph_60 not in ['', '-999', '-999.0', '-999.00'] else None
+                onboard_temp = float(onboard_temp) if onboard_temp not in ['', '-999', '-999.0', '-999.00'] else None
+                onboard_hum = float(onboard_hum) if onboard_hum not in ['', '-999', '-999.0', '-999.00'] else None
                 
                 # Función para detectar eventos de riego (aumento brusco de humedad)
                 def detectar_evento_riego(hum_actual, hum_anterior, umbral_porcentaje=10):
