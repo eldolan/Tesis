@@ -284,8 +284,8 @@ def upload_sensor_data():
                         humedad=round(max(hum_20, 0), 2),
                         conductividad_us_cm=round(cond_20, 2),
                         ph=round(ph_20, 2),
-                        temperatura_onboard=round(onboard_temp, 2) if onboard_temp is not None else None,
-                        humedad_onboard=round(onboard_hum, 2) if onboard_hum is not None else None,
+                        temperatura_onboard=round(onboard_temp, 2) if isinstance(onboard_temp, (int, float)) else None,
+                        humedad_onboard=round(onboard_hum, 2) if isinstance(onboard_hum, (int, float)) else None,
                         es_evento_riego=es_evento_riego_20
                     )
                     existing_20 = SensorRiego20.query.filter_by(timestamp=timestamp).first()
@@ -302,8 +302,8 @@ def upload_sensor_data():
                         humedad=round(max(hum_40, 0), 2),
                         conductividad_us_cm=round(cond_40, 2),
                         ph=round(ph_20, 2),  # pH del sensor de 20cm (no tiene pH propio)
-                        temperatura_onboard=round(onboard_temp, 2) if onboard_temp is not None else None,
-                        humedad_onboard=round(onboard_hum, 2) if onboard_hum is not None else None,
+                        temperatura_onboard=round(onboard_temp, 2) if isinstance(onboard_temp, (int, float)) else None,
+                        humedad_onboard=round(onboard_hum, 2) if isinstance(onboard_hum, (int, float)) else None,
                         es_evento_riego=es_evento_riego_40
                     )
                     existing_40 = SensorRiego40.query.filter_by(timestamp=timestamp).first()
@@ -320,8 +320,8 @@ def upload_sensor_data():
                         humedad=round(max(hum_60, 0), 2),
                         conductividad_us_cm=round(cond_20, 2),  # No tiene EC propio, usar del 20cm
                         ph=round(ph_60, 2),
-                        temperatura_onboard=round(onboard_temp, 2) if onboard_temp is not None else None,
-                        humedad_onboard=round(onboard_hum, 2) if onboard_hum is not None else None,
+                        temperatura_onboard=round(onboard_temp, 2) if isinstance(onboard_temp, (int, float)) else None,
+                        humedad_onboard=round(onboard_hum, 2) if isinstance(onboard_hum, (int, float)) else None,
                         es_evento_riego=es_evento_riego_60
                     )
                     existing_60 = SensorRiego60.query.filter_by(timestamp=timestamp).first()
