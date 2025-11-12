@@ -2,12 +2,11 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-# Cargar variables de entorno desde archivo .env si existe
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    pass  # python-dotenv no está instalado, usar variables del sistema
+    pass
 
 
 db = SQLAlchemy()
@@ -21,12 +20,7 @@ def create_app():
     db.init_app(app)
     
     def seed_adminpanel():
-        """Inicializar base de datos sin datos de ejemplo.
-        
-        Los datos serán proporcionados únicamente por los sensores físicos
-        conectados al Arduino a través del endpoint /upload.
-        """
-        print("Base de datos inicializada. Lista para recibir datos de sensores.")
+        print("Base de datos iniciada. Lista para recibir datos de sensores.")
 
     with app.app_context():
         from . import routes

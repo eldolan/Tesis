@@ -110,18 +110,16 @@ def get_weather_data():
 
 @app.route('/get_irrigation_data')
 def get_irrigation_data():
-    # Consultar datos de todos los sensores físicos
+
     readings_20 = SensorRiego20.query.order_by(SensorRiego20.timestamp.asc()).all()
     readings_40 = SensorRiego40.query.order_by(SensorRiego40.timestamp.asc()).all()
     readings_60 = SensorRiego60.query.order_by(SensorRiego60.timestamp.asc()).all()
     
-    # Crear un diccionario unificado de timestamps
     all_timestamps = set()
     for readings in [readings_20, readings_40, readings_60]:
         all_timestamps.update([r.timestamp for r in readings])
     all_timestamps = sorted(all_timestamps)
     
-    # Mapear datos por timestamp
     data_20 = {r.timestamp: r for r in readings_20}
     data_40 = {r.timestamp: r for r in readings_40}
     data_60 = {r.timestamp: r for r in readings_60}
@@ -132,14 +130,9 @@ def get_irrigation_data():
     sensor3_data = []
     
     for ts in all_timestamps:
-        # Sensor 1 (20cm): usar datos reales si existen
         sensor1_data.append(data_20[ts].humedad if ts in data_20 else None)
-        
-        # Sensores 2 y 3 (40cm, 60cm): usar datos reales si existen, sino null
         sensor2_data.append(data_40[ts].humedad if ts in data_40 else None)
         sensor3_data.append(data_60[ts].humedad if ts in data_60 else None)
-        
-        # Recoger eventos de riego de cualquier sensor que tenga datos
         if ((ts in data_20 and data_20[ts].es_evento_riego) or 
             (ts in data_40 and data_40[ts].es_evento_riego) or 
             (ts in data_60 and data_60[ts].es_evento_riego)):
@@ -147,9 +140,9 @@ def get_irrigation_data():
     
     return jsonify({
         'dates': [ts.isoformat() for ts in all_timestamps],
-        'sensor1': sensor1_data,  # Sensor 20cm 
-        'sensor2': sensor2_data,  # Sensor 40cm
-        'sensor3': sensor3_data,  # Sensor 60cm
+        'sensor1': sensor1_data,
+        'sensor2': sensor2_data,
+        'sensor3': sensor3_data,
         'irrigation_events': irrigation_events
     })
 
@@ -168,9 +161,6 @@ def get_fertilizer_data():
 @app.route('/upload', methods=['POST'])
 @require_api_key
 def upload_sensor_data():
-    """Endpoint para recibir datos CSV de sensores desde laptop externa"""
-    
-    # Rate limiting check
     client_ip = request.remote_addr
     if not check_rate_limit(client_ip):
         app.logger.warning(f"Rate limit exceeded for IP {client_ip}")
@@ -188,10 +178,9 @@ def upload_sensor_data():
     if not file.filename.lower().endswith('.csv'):
         return jsonify({'error': 'El archivo debe ser de tipo CSV'}), 400
     
-    # Check file size
     file.seek(0, os.SEEK_END)
     file_size = file.tell()
-    file.seek(0)  # Reset file pointer
+    file.seek(0)
     
     if file_size > MAX_FILE_SIZE:
         app.logger.warning(f"File too large ({file_size} bytes) from {client_ip}")
@@ -201,40 +190,50 @@ def upload_sensor_data():
         return jsonify({'error': 'El archivo está vacío'}), 400
     
     try:
-        # Leer el contenido del archivo CSV
         stream = StringIO(file.stream.read().decode("UTF-8"), newline=None)
         csv_reader = csv.reader(stream)
-        
-        # Leer el encabezado
         header = next(csv_reader, None)
         
-        if not header or len(header) != 14:  # 13 columnas de datos + 1 timestamp
-            return jsonify({'error': 'Formato CSV inválido. Se esperan 14 columnas (timestamp + 13 datos).'}), 400
+        if not header or len(header) != 16:
+            return jsonify({'error': 'Formato CSV inválido. Se esperan 16 columnas (timestamp + 15 datos).'}), 400
         
         expected_header = ['timestamp', 'Temp_20cm', 'Hum_20cm', 'Cond_20cm', 'PH_20cm', 
                           'N_20cm', 'P_20cm', 'K_20cm', 'Temp_40cm', 'Hum_40cm', 
-                          'Cond_40cm', 'Temp_60cm', 'Hum_60cm', 'PH_60cm']
+                          'Cond_40cm', 'Temp_60cm', 'Hum_60cm', 'PH_60cm', 'Onboard_Temp', 'Onboard_Hum']
         
         if header != expected_header:
             return jsonify({'error': f'Encabezado CSV inválido. Se esperaba: {expected_header}'}), 400
-        
-        # Procesar cada fila de datos
         rows_processed = 0
         errors = []
         
+        # Diccionario para almacenar últimas lecturas de humedad (para detección de eventos)
+        last_humidity = {
+            '20cm': None,
+            '40cm': None,
+            '60cm': None
+        }
+        
+        # Obtener últimas lecturas de la base de datos
+        last_20 = SensorRiego20.query.order_by(SensorRiego20.timestamp.desc()).first()
+        last_40 = SensorRiego40.query.order_by(SensorRiego40.timestamp.desc()).first()
+        last_60 = SensorRiego60.query.order_by(SensorRiego60.timestamp.desc()).first()
+        
+        if last_20:
+            last_humidity['20cm'] = last_20.humedad
+        if last_40:
+            last_humidity['40cm'] = last_40.humedad
+        if last_60:
+            last_humidity['60cm'] = last_60.humedad
+        
         for row_num, row in enumerate(csv_reader, start=2):
             try:
-                if len(row) != 14:
+                if len(row) != 16:
                     errors.append(f'Fila {row_num}: número incorrecto de columnas')
                     continue
-                
-                # Parsear todas las columnas del nuevo formato
                 (timestamp_str, temp_20, hum_20, cond_20, ph_20, n_20, p_20, k_20,
-                 temp_40, hum_40, cond_40, temp_60, hum_60, ph_60) = row
+                 temp_40, hum_40, cond_40, temp_60, hum_60, ph_60, onboard_temp, onboard_hum) = row
                 
                 timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
-                
-                # Convertir valores numéricos para sensor 20cm
                 temp_20 = float(temp_20) if temp_20 not in ['', '-999', '-999.0'] else None
                 hum_20 = float(hum_20) if hum_20 not in ['', '-999', '-999.0'] else None
                 cond_20 = float(cond_20) if cond_20 not in ['', '-999', '-999.0'] else None
@@ -242,18 +241,42 @@ def upload_sensor_data():
                 n_20 = float(n_20) if n_20 not in ['', '-999', '-999.0'] else 0.0
                 p_20 = float(p_20) if p_20 not in ['', '-999', '-999.0'] else 0.0
                 k_20 = float(k_20) if k_20 not in ['', '-999', '-999.0'] else 0.0
-                
-                # Convertir valores numéricos para sensor 40cm
                 temp_40 = float(temp_40) if temp_40 not in ['', '-999', '-999.0'] else None
                 hum_40 = float(hum_40) if hum_40 not in ['', '-999', '-999.0'] else None
                 cond_40 = float(cond_40) if cond_40 not in ['', '-999', '-999.0'] else None
-                
-                # Convertir valores numéricos para sensor 60cm
                 temp_60 = float(temp_60) if temp_60 not in ['', '-999', '-999.0'] else None
                 hum_60 = float(hum_60) if hum_60 not in ['', '-999', '-999.0'] else None
                 ph_60 = float(ph_60) if ph_60 not in ['', '-999', '-999.0'] else None
+                onboard_temp = float(onboard_temp) if onboard_temp not in ['', '-999', '-999.0'] else None
+                onboard_hum = float(onboard_hum) if onboard_hum not in ['', '-999', '-999.0'] else None
                 
-                # Crear registro para sensor de 20cm (datos reales)
+                # Función para detectar eventos de riego (aumento brusco de humedad)
+                def detectar_evento_riego(hum_actual, hum_anterior, umbral_porcentaje=10):
+                    """Detecta si hay un evento de riego basado en aumento de humedad.
+                    
+                    Args:
+                        hum_actual: Humedad actual
+                        hum_anterior: Humedad de la lectura anterior
+                        umbral_porcentaje: Porcentaje mínimo de aumento para considerar riego
+                    
+                    Returns:
+                        True si se detecta evento de riego, False en caso contrario
+                    """
+                    if hum_actual is None or hum_anterior is None:
+                        return False
+                    
+                    # Calcular aumento porcentual
+                    if hum_anterior > 0:
+                        aumento_porcentual = ((hum_actual - hum_anterior) / hum_anterior) * 100
+                        # Si el aumento es mayor al umbral, es un evento de riego
+                        return aumento_porcentual >= umbral_porcentaje
+                    
+                    return False
+                # Detectar eventos de riego para cada sensor
+                es_evento_riego_20 = detectar_evento_riego(hum_20, last_humidity['20cm'])
+                es_evento_riego_40 = detectar_evento_riego(hum_40, last_humidity['40cm'])
+                es_evento_riego_60 = detectar_evento_riego(hum_60, last_humidity['60cm'])
+                
                 if all(v is not None for v in [temp_20, hum_20, cond_20, ph_20]):
                     sensor_20cm = SensorRiego20(
                         timestamp=timestamp,
@@ -261,11 +284,15 @@ def upload_sensor_data():
                         humedad=round(max(hum_20, 0), 2),
                         conductividad_us_cm=round(cond_20, 2),
                         ph=round(ph_20, 2),
-                        es_evento_riego=False
+                        temperatura_onboard=round(onboard_temp, 2) if onboard_temp is not None else None,
+                        humedad_onboard=round(onboard_hum, 2) if onboard_hum is not None else None,
+                        es_evento_riego=es_evento_riego_20
                     )
                     existing_20 = SensorRiego20.query.filter_by(timestamp=timestamp).first()
                     if not existing_20:
                         db.session.add(sensor_20cm)
+                        # Actualizar última humedad para próxima comparación
+                        last_humidity['20cm'] = hum_20
                 
                 # Crear registro para sensor de 40cm (datos reales)
                 if all(v is not None for v in [temp_40, hum_40, cond_40]):
@@ -275,11 +302,15 @@ def upload_sensor_data():
                         humedad=round(max(hum_40, 0), 2),
                         conductividad_us_cm=round(cond_40, 2),
                         ph=round(ph_20, 2),  # pH del sensor de 20cm (no tiene pH propio)
-                        es_evento_riego=False
+                        temperatura_onboard=round(onboard_temp, 2) if onboard_temp is not None else None,
+                        humedad_onboard=round(onboard_hum, 2) if onboard_hum is not None else None,
+                        es_evento_riego=es_evento_riego_40
                     )
                     existing_40 = SensorRiego40.query.filter_by(timestamp=timestamp).first()
                     if not existing_40:
                         db.session.add(sensor_40cm)
+                        # Actualizar última humedad para próxima comparación
+                        last_humidity['40cm'] = hum_40
                 
                 # Crear registro para sensor de 60cm (datos reales)
                 if all(v is not None for v in [temp_60, hum_60, ph_60]):
@@ -289,11 +320,15 @@ def upload_sensor_data():
                         humedad=round(max(hum_60, 0), 2),
                         conductividad_us_cm=round(cond_20, 2),  # No tiene EC propio, usar del 20cm
                         ph=round(ph_60, 2),
-                        es_evento_riego=False
+                        temperatura_onboard=round(onboard_temp, 2) if onboard_temp is not None else None,
+                        humedad_onboard=round(onboard_hum, 2) if onboard_hum is not None else None,
+                        es_evento_riego=es_evento_riego_60
                     )
                     existing_60 = SensorRiego60.query.filter_by(timestamp=timestamp).first()
                     if not existing_60:
                         db.session.add(sensor_60cm)
+                        # Actualizar última humedad para próxima comparación
+                        last_humidity['60cm'] = hum_60
                 
                 # Crear registro de fertilizante (NPK del sensor de 20cm)
                 sensor_fertilizante = SensorFertilizante(
@@ -312,8 +347,6 @@ def upload_sensor_data():
                 errors.append(f'Fila {row_num}: error de conversión de datos - {str(e)}')
             except Exception as e:
                 errors.append(f'Fila {row_num}: error inesperado - {str(e)}')
-        
-        # Guardar cambios en la base de datos
         db.session.commit()
         
         response_data = {
@@ -322,7 +355,7 @@ def upload_sensor_data():
         }
         
         if errors:
-            response_data['warnings'] = errors[:10]  # Limitar a 10 errores
+            response_data['warnings'] = errors[:10]
             response_data['total_errors'] = len(errors)
         
         app.logger.info(f"Successful data upload from {client_ip}: {rows_processed} rows processed")

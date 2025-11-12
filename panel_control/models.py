@@ -8,6 +8,8 @@ class SensorRiego20(db.Model):
     humedad = db.Column(db.Float, nullable=False)
     conductividad_us_cm = db.Column(db.Float, nullable=False)
     ph = db.Column(db.Float, nullable=False)
+    temperatura_onboard = db.Column(db.Float, nullable=True)
+    humedad_onboard = db.Column(db.Float, nullable=True)
     es_evento_riego = db.Column(db.Boolean, default=False)
 
 class SensorRiego40(db.Model):
@@ -17,6 +19,8 @@ class SensorRiego40(db.Model):
     humedad = db.Column(db.Float, nullable=False)
     conductividad_us_cm = db.Column(db.Float, nullable=False)
     ph = db.Column(db.Float, nullable=False)
+    temperatura_onboard = db.Column(db.Float, nullable=True)
+    humedad_onboard = db.Column(db.Float, nullable=True)
     es_evento_riego = db.Column(db.Boolean, default=False)
 
 class SensorRiego60(db.Model):
@@ -26,6 +30,8 @@ class SensorRiego60(db.Model):
     humedad = db.Column(db.Float, nullable=False)
     conductividad_us_cm = db.Column(db.Float, nullable=False)
     ph = db.Column(db.Float, nullable=False)
+    temperatura_onboard = db.Column(db.Float, nullable=True)
+    humedad_onboard = db.Column(db.Float, nullable=True)
     es_evento_riego = db.Column(db.Boolean, default=False)
 
 class SensorFertilizante(db.Model):
