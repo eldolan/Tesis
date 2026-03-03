@@ -14,7 +14,7 @@ The SQLite database (`instance/adminpanel.db`) is auto-created on first run via 
 
 Create a `.env` file in the project root. The app loads it via `python-dotenv`.
 
-- `OPENWEATHER_API_KEY` — required for the weather widget; without a valid key, the weather city selector will return an error but the rest of the dashboard works fine.
+- `OPENWEATHER_API_KEY` — **optional**. Only needed for the weather widget. Without it, the city selector returns an error but all other dashboard features (irrigation charts, fertilizer charts, CSV upload) work fully.
 - `SENSOR_API_KEY` — required for the CSV upload endpoint (`POST /upload`). Defaults to `default-sensor-key-change-me`.
 
 ### Linting
