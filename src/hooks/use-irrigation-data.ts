@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { getSupabase } from "@/lib/supabase/client"
 import type { IrrigationData, SensorRiego } from "@/types"
 
 export function useIrrigationData() {
@@ -15,9 +15,9 @@ export function useIrrigationData() {
 
     async function fetchInitial() {
       const [res20, res40, res60] = await Promise.all([
-        supabase.from("sensor_riego_20").select("*").order("timestamp", { ascending: true }),
-        supabase.from("sensor_riego_40").select("*").order("timestamp", { ascending: true }),
-        supabase.from("sensor_riego_60").select("*").order("timestamp", { ascending: true }),
+        getSupabase().from("sensor_riego_20").select("*").order("timestamp", { ascending: true }),
+        getSupabase().from("sensor_riego_40").select("*").order("timestamp", { ascending: true }),
+        getSupabase().from("sensor_riego_60").select("*").order("timestamp", { ascending: true }),
       ])
 
       const rows20 = (res20.data ?? []) as SensorRiego[]
@@ -78,7 +78,7 @@ export function useIrrigationData() {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      getSupabase().removeChannel(channel)
     }
   }, [])
 

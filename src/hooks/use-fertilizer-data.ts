@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { getSupabase } from "@/lib/supabase/client"
 import type { FertilizerData, SensorFertilizante } from "@/types"
 
 export function useFertilizerData() {
@@ -42,7 +42,7 @@ export function useFertilizerData() {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      getSupabase().removeChannel(channel)
     }
   }, [])
 

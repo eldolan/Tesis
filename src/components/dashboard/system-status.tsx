@@ -10,7 +10,7 @@ import {
   CircleDot,
   Loader2,
 } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { getSupabase } from "@/lib/supabase/client"
 
 // Lista configurable de tablas candidatas — agregar aquí al incorporar nuevo hardware
 const SENSOR_TABLES = [
@@ -90,12 +90,12 @@ export function SystemStatus() {
     descubrirSensores()
 
     // Verificar conexión realtime
-    const channel = supabase.channel("status-check")
+    const channel = getSupabase().channel("status-check")
     channel.subscribe((status) => {
       setRealtimeConnected(status === "SUBSCRIBED")
     })
 
-    return () => { supabase.removeChannel(channel) }
+    return () => { getSupabase().removeChannel(channel) }
   }, [])
 
   const totalDescubiertos = sensores.length
