@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityCombobox } from "@/components/city-combobox"
+import { MapPin, Thermometer, Droplets, Wind } from "lucide-react"
 import type { WeatherData } from "@/types"
 
 export function WeatherWidget() {
@@ -58,26 +59,32 @@ export function WeatherWidget() {
 
   if (!showForm && weather) {
     return (
-      <div className="bg-[#0505053f] rounded-xl h-full flex flex-col items-center justify-center text-center p-6 gap-2">
-        <h1 className="text-2xl font-semibold">Clima en {weather.city}</h1>
+      <div className="bg-[#0505053f] rounded-xl h-full flex flex-col items-center justify-center text-center p-4 gap-1.5">
+        <div className="flex items-center gap-1.5 text-lg font-semibold">
+          <MapPin size={18} className="text-primary" />
+          {weather.city}
+        </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
           alt="icono del clima"
-          className="w-20 h-20"
+          className="w-16 h-16"
         />
-        <h3 className="capitalize text-muted-foreground">{weather.description}</h3>
-        <h2 className="text-4xl font-bold text-[#0071FF]">
+        <p className="capitalize text-muted-foreground text-sm">{weather.description}</p>
+        <div className="flex items-center gap-1 text-3xl font-bold text-primary">
+          <Thermometer size={24} />
           {weather.temperature}°C
-        </h2>
-        <p>Humedad: {weather.humidity}%</p>
-        <p>Velocidad del viento: {weather.wind_speed} m/s</p>
-        <Button
-          variant="outline"
-          onClick={handleReset}
-          className="mt-2 uppercase tracking-widest"
-        >
-          Cambiar Ubicación
+        </div>
+        <div className="flex gap-4 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Droplets size={14} /> {weather.humidity}%
+          </span>
+          <span className="flex items-center gap-1">
+            <Wind size={14} /> {weather.wind_speed} m/s
+          </span>
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} className="mt-1 text-xs text-muted-foreground">
+          Cambiar Ubicacion
         </Button>
       </div>
     )
