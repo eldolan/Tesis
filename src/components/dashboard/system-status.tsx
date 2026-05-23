@@ -47,7 +47,7 @@ export function SystemStatus() {
 
       // Consultar cada tabla candidata — solo incluir las que tienen datos recientes
       for (const def of SENSOR_TABLES) {
-        const { data, error } = await supabase
+        const { data, error } = await getSupabase()
           .from(def.table)
           .select("timestamp, es_evento_riego")
           .gte("timestamp", hace24h.toISOString())

@@ -14,7 +14,7 @@ export function useFertilizerData() {
     initialized.current = true
 
     async function fetchInitial() {
-      const { data: rows } = await supabase
+      const { data: rows } = await getSupabase()
         .from("sensor_fertilizante")
         .select("*")
         .order("timestamp", { ascending: true })
@@ -33,7 +33,7 @@ export function useFertilizerData() {
 
     fetchInitial()
 
-    const channel = supabase
+    const channel = getSupabase()
       .channel("fertilizer-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_fertilizante" }, () => {
         initialized.current = false

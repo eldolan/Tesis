@@ -60,7 +60,7 @@ export function useIrrigationData() {
     fetchInitial()
 
     // Suscribirse a inserts en tiempo real
-    const channel = supabase
+    const channel = getSupabase()
       .channel("irrigation-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_riego_20" }, () => {
         // Re-fetch on new data for simplicity
