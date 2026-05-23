@@ -1,10 +1,10 @@
 import type { Metadata } from "next"
 import "./globals.css"
-import { Navbar } from "@/components/layout/navbar"
+import { AuthProvider } from "@/contexts/auth-context"
 
 export const metadata: Metadata = {
   title: "Panel de Control",
-  description: "Panel de control de sensores agrícolas",
+  description: "Panel de control de sensores agricolas",
   icons: {
     icon: "/images/logo.svg",
   },
@@ -16,10 +16,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className="dark h-full antialiased">
-      <body className="min-h-dvh flex flex-col">
-        <Navbar />
-        {children}
+    <html lang="es" className="dark antialiased">
+      <body className="bg-background">
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )
