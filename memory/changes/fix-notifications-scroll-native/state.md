@@ -4,8 +4,8 @@ change_name: "fix-notifications-scroll-native"
 domain: "fix"
 status: active
 fast_path: "apply-only"
-current_phase: sdd-apply
-phases_completed: [sdd-init]
+current_phase: sdd-verify
+phases_completed: [sdd-init, sdd-apply]
 spec_refs: []
 scope: ""
 worktree: "/home/dylan/herramientas-ia/projects/tesis/.sdd/worktrees/fix-notifications-scroll-native"
@@ -16,6 +16,7 @@ mr_status: pending
 mr_error: ""
 created: "2026-05-24"
 updated: "2026-05-24"
+# phases_completed updated by sdd-apply 2026-05-24
 tags: [change]
 ---
 

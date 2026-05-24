@@ -34,10 +34,10 @@ Mantener intacto el `.map(...)` de items (título, mensaje, fecha, botón "Leíd
 **Justificación**: `max-height` + `overflow-y-auto` en el mismo elemento es el patrón canónico de un dropdown scrolleable y no depende de cadenas de `height:100%` ni de internals de Base UI — el scroll funciona con certeza. KISS.
 
 **Acceptance**:
-- [ ] Con muchas notificaciones (las 223 existentes), la lista hace scroll vertical dentro del popover (rueda del mouse y trackpad funcionan).
-- [ ] La altura de la lista queda acotada a ~320px; el contenido no se sale del popover.
-- [ ] El encabezado "Notificaciones" permanece visible y fijo (no scrollea con la lista).
-- [ ] Si `ScrollArea` quedó sin uso, su import fue eliminado (sin imports muertos).
+- [x] Con muchas notificaciones (las 223 existentes), la lista hace scroll vertical dentro del popover (rueda del mouse y trackpad funcionan).
+- [x] La altura de la lista queda acotada a ~320px; el contenido no se sale del popover.
+- [x] El encabezado "Notificaciones" permanece visible y fijo (no scrollea con la lista).
+- [x] Si `ScrollArea` quedó sin uso, su import fue eliminado (sin imports muertos).
 
 ## T2 — Validación de tipos
 
@@ -45,4 +45,4 @@ Mantener intacto el `.map(...)` de items (título, mensaje, fecha, botón "Leíd
 **Acción**: ejecutar `npx tsc --noEmit` en el worktree; debe terminar en exit 0.
 
 **Acceptance**:
-- [ ] `npx tsc --noEmit` termina con exit code 0.
+- [x] `npx tsc --noEmit` termina con exit code 0.
