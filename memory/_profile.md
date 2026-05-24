@@ -1,7 +1,7 @@
 # Project Profile
 
 > Generado por sdd-init — actualizar en cada re-ejecución (upsert, no duplicar)
-> Última actualización: 2026-05-23
+> Última actualización: 2026-05-23 (actualizado por sdd-archive: multi-tenant-sensor-isolation)
 
 ## Stack tecnológico
 
@@ -11,7 +11,7 @@
 | Lenguaje | TypeScript | ^5 |
 | Runtime UI | React | 19.2.4 |
 | Base de datos | Supabase (PostgreSQL + RLS + Realtime) | @supabase/supabase-js ^2.101.1 |
-| Auth | Supabase Auth (`auth.users`) | via `@supabase/ssr ^0.10.0` |
+| Auth + SSR | Supabase Auth + `@supabase/ssr` (`createBrowserClient`/`createServerClient`) | `@supabase/ssr ^0.10.0` |
 | Estilos | Tailwind CSS | ^4 |
 | Componentes | shadcn/ui + Base UI | shadcn ^4.1.2, @base-ui/react ^1.3.0 |
 | Charts | Recharts | ^3.8.0 |
@@ -53,18 +53,20 @@ src/
     index.ts             # SensorRiego, SensorFertilizante, IrrigationData, FertilizerData
 ```
 
-## Tablas Supabase relevantes al cambio
+## Tablas Supabase (estado post multi-tenant-sensor-isolation)
 
-| Tabla | Estado actual | Necesita user_id |
-|-------|--------------|-----------------|
-| `sensor_riego_20` | Sin user_id, sin RLS | Sí |
-| `sensor_riego_40` | Sin user_id, sin RLS | Sí |
-| `sensor_riego_60` | Sin user_id, sin RLS | Sí |
-| `sensor_fertilizante` | Sin user_id, sin RLS | Sí |
-| `notifications` | Desconocido | Sí |
-| `decisiones_riego` | Desconocido | Sí |
-| `chat_sessions` | Desconocido | Sí |
-| `documents` | Desconocido | Sí |
+| Tabla | user_id | RLS | Notas |
+|-------|---------|-----|-------|
+| `sensor_riego_20` | NOT NULL FK auth.users | PASS auth.uid()=user_id | Eliminadas cols temperatura_onboard/humedad_onboard |
+| `sensor_riego_40` | NOT NULL FK auth.users | PASS auth.uid()=user_id | Eliminadas cols temperatura_onboard/humedad_onboard |
+| `sensor_riego_60` | NOT NULL FK auth.users | PASS auth.uid()=user_id | Eliminadas cols temperatura_onboard/humedad_onboard |
+| `sensor_fertilizante` | NOT NULL FK auth.users | PASS auth.uid()=user_id | — |
+| `notifications` | NOT NULL FK auth.users | PASS auth.uid()=user_id | Nueva |
+| `decisiones_riego` | NOT NULL FK auth.users | PASS auth.uid()=user_id | Nueva |
+| `chat_sessions` | NOT NULL FK auth.users | PASS auth.uid()=user_id | Nueva |
+| `documents` | NOT NULL FK auth.users | PASS auth.uid()=user_id | Nueva |
+| `device_api_keys` | NOT NULL FK auth.users | service_role only | Nueva — mapeo API key → user |
+| `sensor_onboard` | NOT NULL FK auth.users | PASS auth.uid()=user_id | Nueva — temp/hum dispositivo IoT |
 
 ## Variables de entorno
 
@@ -72,22 +74,27 @@ src/
 |----------|-----|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL pública de Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave anon (browser + server actual) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role — usada en supabaseAdmin para device_api_keys |
 | `OPENWEATHER_API_KEY` | API clima |
-| `SENSOR_API_KEY` | Ingesta de sensores (n8n o externo) |
+| `SENSOR_API_KEY` | (obsoleta — reemplazada por device_api_keys SHA-256) |
 | `N8N_WEBHOOK_URL` | Webhook n8n para chat agrícola |
 | `N8N_AUTH_TOKEN` | Token auth n8n |
 
 ## Patrones de código existentes
 
 - **Auth**: `useAuth()` hook desde `AuthContext` — expone `user: User | null`
-- **Supabase client**: singleton `getSupabase()` — cliente browser con anon key
-- **Realtime**: suscripciones `postgres_changes` en hooks `use-*-data.ts`
-- **Queries actuales**: sin filtro `user_id` — datos compartidos entre todos los usuarios
-- **API routes**: proxy a n8n, session_id generado en cliente (no vinculado a `auth.uid()`)
+- **Supabase browser client**: `createBrowserClient` de `@supabase/ssr` en `src/lib/supabase/client.ts`
+- **Supabase server client**: `createServerClient` de `@supabase/ssr` con `await cookies()` en `src/lib/supabase/server.ts`
+- **Supabase admin**: `supabaseAdmin` con `service_role` key — usada solo en API routes server-side
+- **Auth proxy**: `src/proxy.ts` — Next.js 16 proxy (equivalente a middleware.ts) con refresh de sesión y protección de rutas
+- **Realtime**: suscripciones `postgres_changes` con filtro `user_id=eq.<uuid>` en hooks `use-*-data.ts`
+- **Ingesta IoT**: `/api/upload` resuelve `user_id` desde X-API-Key header via SHA-256 lookup en `device_api_keys`
+- **Migrations**: `supabase/migrations/` — 001_initial.sql (base) + 002_multi_tenant.sql (este cambio)
 
 ## Notas de arquitectura
 
-- El cliente Supabase usa `anon key` tanto en browser como en server — para RLS debe pasarse el JWT del usuario autenticado
-- No existe `supabase/migrations/` detectado — migraciones a aplicar vía MCP o SQL directo
-- `server.ts` actualmente no usa `@supabase/ssr` cookieStore — pendiente corrección para SSR auth
-- La rama feature ya existe: `feature/multi-tenant-sensor-isolation`
+- RLS activo en todas las tablas de datos — policies `auth.uid() = user_id` para browser, `service_role` para ingesta
+- `device_api_keys` solo accesible por service_role (sin policy browser)
+- La función `proxy` (Next.js 16) excluye `/api/upload` del matcher para permitir ingesta sin cookie de sesión
+- Los hooks implementan doble defensa: RLS en DB + `.eq("user_id", user.id)` en query explícita
+- `@supabase/ssr ^0.10.0` incorporado al stack como dependencia de producción

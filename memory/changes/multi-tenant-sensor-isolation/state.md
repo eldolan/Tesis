@@ -50,7 +50,7 @@ Aislar datos de sensores por usuario individual (`auth.users`). Cada usuario tie
 | sdd-tasks | done | 2026-05-23 |
 | sdd-apply | done | 2026-05-23 |
 | sdd-verify | done | 2026-05-23 |
-| sdd-archive | pending | — |
+| sdd-archive | done | 2026-05-23 |
 
 ## Tracking
 
@@ -64,8 +64,11 @@ phases_completed:
   - sdd-tasks
   - sdd-apply
   - sdd-verify
-current_phase: sdd-archive
-status: active
+  - sdd-archive
+current_phase: ""
+status: completed
+mr: https://github.com/eldolan/Tesis/pull/5
+mr_status: created
 spec_refs:
   - data-isolation/user-id-column-sensors
   - data-isolation/rls-policies-sensors
@@ -78,7 +81,7 @@ spec_refs:
   - auth-integration/hooks-user-filter
   - sensor-ingestion/api-upload-user-resolution
   - sensor-ingestion/api-upload-onboard-write
-updated: 2026-05-23T18:00:00
+updated: 2026-05-23T20:00:00
 adrs:
   - 0001-api-key-auth-via-sha256-hash-lookup
   - 0002-supabase-ssr-client-pattern

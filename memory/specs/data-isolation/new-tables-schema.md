@@ -7,7 +7,7 @@ domain: feature
 delta_type: schema-change
 supersedes: null
 superseded_by: null
-status: draft
+status: completed
 assigned_agent: null
 priority: high
 depends_on: [user-id-column-sensors]

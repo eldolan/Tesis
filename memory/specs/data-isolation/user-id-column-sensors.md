@@ -7,7 +7,7 @@ domain: feature
 delta_type: schema-change
 supersedes: null
 superseded_by: null
-status: draft
+status: completed
 assigned_agent: null
 priority: critical
 depends_on: []
