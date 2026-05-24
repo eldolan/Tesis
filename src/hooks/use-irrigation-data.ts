@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import type { IrrigationData, SensorRiego } from "@/types"
 
 export function useIrrigationData() {
@@ -13,11 +13,35 @@ export function useIrrigationData() {
     if (initialized.current) return
     initialized.current = true
 
+    const supabase = createClient()
+    // Referencia al canal para poder hacer cleanup en el return
+    let cleanup: (() => void) | undefined
+
     async function fetchInitial() {
+      // Verificar usuario autenticado antes de consultar
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setData({ dates: [], sensor1: [], sensor2: [], sensor3: [], irrigation_events: [] })
+        setIsLoading(false)
+        return
+      }
+
       const [res20, res40, res60] = await Promise.all([
-        supabase.from("sensor_riego_20").select("*").order("timestamp", { ascending: true }),
-        supabase.from("sensor_riego_40").select("*").order("timestamp", { ascending: true }),
-        supabase.from("sensor_riego_60").select("*").order("timestamp", { ascending: true }),
+        supabase
+          .from("sensor_riego_20")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("timestamp", { ascending: true }),
+        supabase
+          .from("sensor_riego_40")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("timestamp", { ascending: true }),
+        supabase
+          .from("sensor_riego_60")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("timestamp", { ascending: true }),
       ])
 
       const rows20 = (res20.data ?? []) as SensorRiego[]
@@ -55,31 +79,57 @@ export function useIrrigationData() {
 
       setData({ dates: sortedDates, sensor1, sensor2, sensor3, irrigation_events: irrigationEvents })
       setIsLoading(false)
+
+      // Suscribir canal Realtime filtrado por usuario, solo después de conocer el uid
+      const channel = supabase
+        .channel("irrigation-realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "sensor_riego_20",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            initialized.current = false
+            fetchInitial()
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "sensor_riego_40",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            initialized.current = false
+            fetchInitial()
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "sensor_riego_60",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            initialized.current = false
+            fetchInitial()
+          }
+        )
+        .subscribe()
+
+      cleanup = () => { supabase.removeChannel(channel) }
     }
 
     fetchInitial()
 
-    // Suscribirse a inserts en tiempo real
-    const channel = supabase
-      .channel("irrigation-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_riego_20" }, () => {
-        // Re-fetch on new data for simplicity
-        initialized.current = false
-        fetchInitial()
-      })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_riego_40" }, () => {
-        initialized.current = false
-        fetchInitial()
-      })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_riego_60" }, () => {
-        initialized.current = false
-        fetchInitial()
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { cleanup?.() }
   }, [])
 
   return { data, isLoading }
