@@ -2,31 +2,45 @@ import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase/server"
 import { parseCSV, parseCSVRow, EXPECTED_HEADER } from "@/lib/csv-parser"
 import { detectarEventoRiego } from "@/lib/irrigation-detection"
-import { timingSafeEqual } from "crypto"
+import { createHash } from "crypto"
 
-const SENSOR_API_KEY = process.env.SENSOR_API_KEY || "default-sensor-key-change-me"
 const MAX_FILE_SIZE = 1024 * 1024 // 1MB
 
-function validateApiKey(provided: string | null): boolean {
-  if (!provided || !SENSOR_API_KEY) return false
-  try {
-    const a = Buffer.from(provided)
-    const b = Buffer.from(SENSOR_API_KEY)
-    if (a.length !== b.length) return false
-    return timingSafeEqual(a, b)
-  } catch {
-    return false
-  }
+/**
+ * Resuelve el user_id y device_id a partir del API key del dispositivo.
+ * Busca el hash SHA-256 del key en la tabla device_api_keys.
+ */
+async function resolveDeviceApiKey(
+  apiKey: string
+): Promise<{ user_id: string; device_id: string | null } | null> {
+  const keyHash = createHash("sha256").update(apiKey).digest("hex")
+
+  const { data, error } = await supabaseAdmin
+    .from("device_api_keys")
+    .select("user_id, device_id")
+    .eq("key_hash", keyHash)
+    .single()
+
+  if (error || !data) return null
+
+  return { user_id: data.user_id, device_id: data.device_id ?? null }
 }
 
 export async function POST(request: Request) {
-  // Auth
+  // Autenticación por API key del dispositivo
   const apiKey = request.headers.get("X-API-Key")
-  if (!validateApiKey(apiKey)) {
-    return NextResponse.json({ error: "API key requerida o inválida" }, { status: 401 })
+  if (!apiKey) {
+    return NextResponse.json({ error: "API key requerida" }, { status: 401 })
   }
 
-  // Rate limiting
+  const deviceInfo = await resolveDeviceApiKey(apiKey)
+  if (!deviceInfo) {
+    return NextResponse.json({ error: "API key inválida" }, { status: 401 })
+  }
+
+  const { user_id } = deviceInfo
+
+  // Rate limiting por IP
   const forwarded = request.headers.get("x-forwarded-for")
   const clientIp = forwarded?.split(",")[0]?.trim() || "127.0.0.1"
 
@@ -38,7 +52,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Demasiadas peticiones. Inténtalo más tarde." }, { status: 429 })
   }
 
-  // Parse form data
+  // Parsear form data
   const formData = await request.formData()
   const file = formData.get("file") as File | null
 
@@ -83,11 +97,29 @@ export async function POST(request: Request) {
       )
     }
 
-    // Get last humidity readings for irrigation detection
+    // Obtener última lectura de humedad por usuario para detectar eventos de riego
     const [last20, last40, last60] = await Promise.all([
-      supabaseAdmin.from("sensor_riego_20").select("humedad").order("timestamp", { ascending: false }).limit(1).single(),
-      supabaseAdmin.from("sensor_riego_40").select("humedad").order("timestamp", { ascending: false }).limit(1).single(),
-      supabaseAdmin.from("sensor_riego_60").select("humedad").order("timestamp", { ascending: false }).limit(1).single(),
+      supabaseAdmin
+        .from("sensor_riego_20")
+        .select("humedad")
+        .eq("user_id", user_id)
+        .order("timestamp", { ascending: false })
+        .limit(1)
+        .single(),
+      supabaseAdmin
+        .from("sensor_riego_40")
+        .select("humedad")
+        .eq("user_id", user_id)
+        .order("timestamp", { ascending: false })
+        .limit(1)
+        .single(),
+      supabaseAdmin
+        .from("sensor_riego_60")
+        .select("humedad")
+        .eq("user_id", user_id)
+        .order("timestamp", { ascending: false })
+        .limit(1)
+        .single(),
     ])
 
     const lastHumidity = {
@@ -103,6 +135,7 @@ export async function POST(request: Request) {
     const batch40: Record<string, unknown>[] = []
     const batch60: Record<string, unknown>[] = []
     const batchFert: Record<string, unknown>[] = []
+    const batchOnboard: Record<string, unknown>[] = []
 
     for (let i = 0; i < rows.length; i++) {
       const rowNum = i + 2
@@ -116,63 +149,72 @@ export async function POST(request: Request) {
 
         const parsed = parseCSVRow(row)
 
-        // Detect irrigation events
+        // Detectar eventos de riego
         const esEventoRiego20 = detectarEventoRiego(parsed.hum_20, lastHumidity["20cm"])
         const esEventoRiego40 = detectarEventoRiego(parsed.hum_40, lastHumidity["40cm"])
         const esEventoRiego60 = detectarEventoRiego(parsed.hum_60, lastHumidity["60cm"])
 
-        // Sensor 20cm
+        // Sensor 20cm — sin columnas onboard
         if ([parsed.temp_20, parsed.hum_20, parsed.cond_20, parsed.ph_20].every((v) => v !== null)) {
           batch20.push({
+            user_id,
             timestamp: parsed.timestamp,
             temperatura_c: Math.round(parsed.temp_20! * 100) / 100,
             humedad: Math.round(Math.max(parsed.hum_20!, 0) * 100) / 100,
             conductividad_us_cm: Math.round(parsed.cond_20! * 100) / 100,
             ph: Math.round(parsed.ph_20! * 100) / 100,
-            temperatura_onboard: parsed.onboard_temp !== null ? Math.round(parsed.onboard_temp * 100) / 100 : null,
-            humedad_onboard: parsed.onboard_hum !== null ? Math.round(parsed.onboard_hum * 100) / 100 : null,
             es_evento_riego: esEventoRiego20,
           })
           lastHumidity["20cm"] = parsed.hum_20
         }
 
-        // Sensor 40cm (uses pH from 20cm)
+        // Sensor 40cm — usa pH de 20cm; sin columnas onboard
         if ([parsed.temp_40, parsed.hum_40, parsed.cond_40].every((v) => v !== null)) {
           batch40.push({
+            user_id,
             timestamp: parsed.timestamp,
             temperatura_c: Math.round(parsed.temp_40! * 100) / 100,
             humedad: Math.round(Math.max(parsed.hum_40!, 0) * 100) / 100,
             conductividad_us_cm: Math.round(parsed.cond_40! * 100) / 100,
             ph: Math.round((parsed.ph_20 ?? 0) * 100) / 100,
-            temperatura_onboard: parsed.onboard_temp !== null ? Math.round(parsed.onboard_temp * 100) / 100 : null,
-            humedad_onboard: parsed.onboard_hum !== null ? Math.round(parsed.onboard_hum * 100) / 100 : null,
             es_evento_riego: esEventoRiego40,
           })
           lastHumidity["40cm"] = parsed.hum_40
         }
 
-        // Sensor 60cm (uses conductivity from 20cm)
+        // Sensor 60cm — usa conductividad de 20cm; sin columnas onboard
         if ([parsed.temp_60, parsed.hum_60, parsed.ph_60].every((v) => v !== null)) {
           batch60.push({
+            user_id,
             timestamp: parsed.timestamp,
             temperatura_c: Math.round(parsed.temp_60! * 100) / 100,
             humedad: Math.round(Math.max(parsed.hum_60!, 0) * 100) / 100,
             conductividad_us_cm: Math.round((parsed.cond_20 ?? 0) * 100) / 100,
             ph: Math.round(parsed.ph_60! * 100) / 100,
-            temperatura_onboard: parsed.onboard_temp !== null ? Math.round(parsed.onboard_temp * 100) / 100 : null,
-            humedad_onboard: parsed.onboard_hum !== null ? Math.round(parsed.onboard_hum * 100) / 100 : null,
             es_evento_riego: esEventoRiego60,
           })
           lastHumidity["60cm"] = parsed.hum_60
         }
 
-        // Fertilizer (NPK from 20cm sensor)
+        // Fertilizante NPK — siempre presente
         batchFert.push({
+          user_id,
           timestamp: parsed.timestamp,
           nitrogen: Math.round(parsed.n_20 * 100) / 100,
           phosphorus: Math.round(parsed.p_20 * 100) / 100,
           potassium: Math.round(parsed.k_20 * 100) / 100,
         })
+
+        // Lecturas onboard del dispositivo (temperatura y humedad del sensor físico)
+        if (parsed.onboard_temp !== null || parsed.onboard_hum !== null) {
+          batchOnboard.push({
+            user_id,
+            device_id: deviceInfo.device_id,
+            timestamp: parsed.timestamp,
+            temperatura: parsed.onboard_temp !== null ? Math.round(parsed.onboard_temp * 100) / 100 : null,
+            humedad: parsed.onboard_hum !== null ? Math.round(parsed.onboard_hum * 100) / 100 : null,
+          })
+        }
 
         rowsProcessed++
       } catch (e) {
@@ -180,26 +222,42 @@ export async function POST(request: Request) {
       }
     }
 
-    // Batch insert with ON CONFLICT DO NOTHING (upsert with ignoreDuplicates)
+    // Inserción en batch con ON CONFLICT DO NOTHING (upsert con ignoreDuplicates)
     const insertPromises = []
+
     if (batch20.length > 0) {
       insertPromises.push(
-        supabaseAdmin.from("sensor_riego_20").upsert(batch20, { onConflict: "timestamp", ignoreDuplicates: true })
+        supabaseAdmin
+          .from("sensor_riego_20")
+          .upsert(batch20, { onConflict: "user_id,timestamp", ignoreDuplicates: true })
       )
     }
     if (batch40.length > 0) {
       insertPromises.push(
-        supabaseAdmin.from("sensor_riego_40").upsert(batch40, { onConflict: "timestamp", ignoreDuplicates: true })
+        supabaseAdmin
+          .from("sensor_riego_40")
+          .upsert(batch40, { onConflict: "user_id,timestamp", ignoreDuplicates: true })
       )
     }
     if (batch60.length > 0) {
       insertPromises.push(
-        supabaseAdmin.from("sensor_riego_60").upsert(batch60, { onConflict: "timestamp", ignoreDuplicates: true })
+        supabaseAdmin
+          .from("sensor_riego_60")
+          .upsert(batch60, { onConflict: "user_id,timestamp", ignoreDuplicates: true })
       )
     }
     if (batchFert.length > 0) {
       insertPromises.push(
-        supabaseAdmin.from("sensor_fertilizante").upsert(batchFert, { onConflict: "timestamp", ignoreDuplicates: true })
+        supabaseAdmin
+          .from("sensor_fertilizante")
+          .upsert(batchFert, { onConflict: "user_id,timestamp", ignoreDuplicates: true })
+      )
+    }
+    if (batchOnboard.length > 0) {
+      insertPromises.push(
+        supabaseAdmin
+          .from("sensor_onboard")
+          .upsert(batchOnboard, { onConflict: "user_id,timestamp", ignoreDuplicates: true })
       )
     }
 
