@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { getSupabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import type { FertilizerData, SensorFertilizante } from "@/types"
 
 export function useFertilizerData() {
@@ -13,10 +13,21 @@ export function useFertilizerData() {
     if (initialized.current) return
     initialized.current = true
 
+    const supabase = createClient()
+    let cleanup: (() => void) | undefined
+
     async function fetchInitial() {
-      const { data: rows } = await getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setData({ dates: [], nitrogen: [], phosphorus: [], potassium: [], fertilization_events: [] })
+        setIsLoading(false)
+        return
+      }
+
+      const { data: rows } = await supabase
         .from("sensor_fertilizante")
         .select("*")
+        .eq("user_id", user.id)
         .order("timestamp", { ascending: true })
 
       const readings = (rows ?? []) as SensorFertilizante[]
@@ -29,21 +40,30 @@ export function useFertilizerData() {
         fertilization_events: [],
       })
       setIsLoading(false)
+
+      const channel = supabase
+        .channel("fertilizer-realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "sensor_fertilizante",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            initialized.current = false
+            fetchInitial()
+          }
+        )
+        .subscribe()
+
+      cleanup = () => { supabase.removeChannel(channel) }
     }
 
     fetchInitial()
 
-    const channel = getSupabase()
-      .channel("fertilizer-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_fertilizante" }, () => {
-        initialized.current = false
-        fetchInitial()
-      })
-      .subscribe()
-
-    return () => {
-      getSupabase().removeChannel(channel)
-    }
+    return () => { cleanup?.() }
   }, [])
 
   return { data, isLoading }

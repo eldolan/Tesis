@@ -1,0 +1,42 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ Pagina-web ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Deploy to Server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+            echo "--- Iniciando despliegue en el servidor ---"
+            cd /var/www/Tesis
+            
+            echo "--- Forzando la actualización al último commit ---"
+            # Descarga la información más reciente del repositorio remoto
+            git fetch origin Pagina-web
+            git reset --hard origin/Pagina-web
+            
+            echo "--- Mostrando el último commit (después del reset) ---"
+            git log -n 1
+            
+            echo "--- Instalando/actualizando dependencias ---"
+            /var/www/Tesis/venv/bin/pip install -r requirements.txt
+            
+            echo "--- Reiniciando el servicio de la aplicación ---"
+            sudo systemctl restart Tesis.service
+            
+            echo "--- Verificando el estado del servicio ---"
+            sudo systemctl status Tesis.service
+            
+            echo "--- Despliegue finalizado ---"

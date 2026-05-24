@@ -1,21 +1,64 @@
 export interface SensorRiego {
   id: number
+  user_id: string
   timestamp: string
   temperatura_c: number
   humedad: number
   conductividad_us_cm: number
   ph: number
-  temperatura_onboard: number | null
-  humedad_onboard: number | null
   es_evento_riego: boolean
 }
 
 export interface SensorFertilizante {
   id: number
+  user_id: string
   timestamp: string
   nitrogen: number
   phosphorus: number
   potassium: number
+}
+
+export interface SensorOnboard {
+  id: number
+  user_id: string
+  device_id: string | null
+  timestamp: string
+  temperatura: number | null
+  humedad: number | null
+  created_at: string
+}
+
+export interface Notification {
+  id: number
+  user_id: string
+  title: string
+  message: string
+  read: boolean
+  created_at: string
+}
+
+export interface DecisionRiego {
+  id: number
+  user_id: string
+  timestamp: string
+  decision: string
+  razon: string | null
+  created_at: string
+}
+
+export interface ChatSession {
+  id: number
+  user_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface UserDocument {
+  id: number
+  user_id: string
+  name: string
+  content: string | null
+  created_at: string
 }
 
 export interface ChileanCity {

@@ -40,4 +40,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# python / flask legacy
+.venv/
+__pycache__/
+*.pyc
+instance
+
+# project-specific
+Datos BD
+WARP.md
+sensor_client.py
