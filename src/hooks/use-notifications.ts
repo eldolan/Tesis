@@ -30,6 +30,7 @@ export function useNotifications(): UseNotifications {
         .from("notifications")
         .select("*")
         .order("created_at", { ascending: false })
+        .limit(30)
 
       if (!error && data) {
         setNotifications(data as Notification[])
