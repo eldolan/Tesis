@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { getSupabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 
 interface AuthContextType {
@@ -21,12 +21,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getSupabase().auth.getSession().then(({ data: { session } }) => {
+    createClient().auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       setLoading(false)
     })
 
-    const { data: { subscription } } = getSupabase().auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = createClient().auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       setLoading(false)
     })
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signOut = async () => {
-    await getSupabase().auth.signOut()
+    await createClient().auth.signOut()
     setUser(null)
   }
 

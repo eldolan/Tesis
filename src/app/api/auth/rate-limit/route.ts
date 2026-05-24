@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getSupabaseAdmin } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/server"
 
 export const dynamic = 'force-dynamic'
 
@@ -8,8 +8,7 @@ export async function POST(request: Request) {
   const clientIp = forwarded?.split(",")[0]?.trim() || "127.0.0.1"
 
   try {
-    const supabase = getSupabaseAdmin()
-    const { data: allowed } = await supabase.rpc("check_auth_rate_limit", {
+    const { data: allowed } = await supabaseAdmin.rpc("check_auth_rate_limit", {
       p_ip_address: clientIp,
     })
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { getSupabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -55,8 +55,9 @@ export function LoginForm() {
         return
       }
 
+      const supabase = createClient()
       if (mode === "login") {
-        const { error: authError } = await getSupabase().auth.signInWithPassword({
+        const { error: authError } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
@@ -66,7 +67,7 @@ export function LoginForm() {
             : authError.message)
         }
       } else {
-        const { error: authError } = await getSupabase().auth.signUp({
+        const { error: authError } = await supabase.auth.signUp({
           email,
           password,
           options: {

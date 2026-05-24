@@ -10,7 +10,7 @@ import {
   CircleDot,
   Loader2,
 } from "lucide-react"
-import { getSupabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 // Lista configurable de tablas candidatas — agregar aquí al incorporar nuevo hardware
 const SENSOR_TABLES = [
@@ -47,7 +47,7 @@ export function SystemStatus() {
 
       // Consultar cada tabla candidata — solo incluir las que tienen datos recientes
       for (const def of SENSOR_TABLES) {
-        const { data, error } = await getSupabase()
+        const { data, error } = await createClient()
           .from(def.table)
           .select("timestamp, es_evento_riego")
           .gte("timestamp", hace24h.toISOString())
@@ -90,12 +90,12 @@ export function SystemStatus() {
     descubrirSensores()
 
     // Verificar conexión realtime
-    const channel = getSupabase().channel("status-check")
+    const channel = createClient().channel("status-check")
     channel.subscribe((status) => {
       setRealtimeConnected(status === "SUBSCRIBED")
     })
 
-    return () => { getSupabase().removeChannel(channel) }
+    return () => { createClient().removeChannel(channel) }
   }, [])
 
   const totalDescubiertos = sensores.length

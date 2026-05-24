@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
 export const dynamic = 'force-dynamic'
@@ -7,7 +7,6 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const search = url.searchParams.get("search")
 
-  const supabaseAdmin = getSupabaseAdmin()
   let query = supabaseAdmin
     .from("chilean_cities")
     .select("id, name")
