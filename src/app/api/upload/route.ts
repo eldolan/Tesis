@@ -209,9 +209,10 @@ export async function POST(request: Request) {
         if (parsed.onboard_temp !== null || parsed.onboard_hum !== null) {
           batchOnboard.push({
             user_id,
+            device_id: deviceInfo.device_id,
             timestamp: parsed.timestamp,
-            temperatura_onboard: parsed.onboard_temp !== null ? Math.round(parsed.onboard_temp * 100) / 100 : null,
-            humedad_onboard: parsed.onboard_hum !== null ? Math.round(parsed.onboard_hum * 100) / 100 : null,
+            temperatura: parsed.onboard_temp !== null ? Math.round(parsed.onboard_temp * 100) / 100 : null,
+            humedad: parsed.onboard_hum !== null ? Math.round(parsed.onboard_hum * 100) / 100 : null,
           })
         }
 

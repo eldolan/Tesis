@@ -21,9 +21,11 @@ export interface SensorFertilizante {
 export interface SensorOnboard {
   id: number
   user_id: string
+  device_id: string | null
   timestamp: string
-  temperatura_onboard: number | null
-  humedad_onboard: number | null
+  temperatura: number | null
+  humedad: number | null
+  created_at: string
 }
 
 export interface Notification {

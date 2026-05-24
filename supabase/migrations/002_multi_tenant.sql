@@ -58,9 +58,10 @@ CREATE TABLE documents (
 CREATE TABLE sensor_onboard (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    device_id TEXT,
     timestamp TIMESTAMPTZ NOT NULL,
-    temperatura_onboard DOUBLE PRECISION,
-    humedad_onboard DOUBLE PRECISION,
+    temperatura NUMERIC(5,2),
+    humedad NUMERIC(5,2),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id, timestamp)
 );
