@@ -52,6 +52,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Excluir archivos estáticos, imágenes y la ruta de upload (autenticada con API key)
-    '/((?!_next/static|_next/image|favicon.ico|api/upload|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/upload|api/auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }
