@@ -10,6 +10,7 @@ export interface UseNotifications {
   unreadCount: number
   isLoading: boolean
   markAsRead: (id: number) => Promise<void>
+  markAllAsRead: () => Promise<void>
 }
 
 export function useNotifications(): UseNotifications {
@@ -94,5 +95,24 @@ export function useNotifications(): UseNotifications {
     }
   }
 
-  return { notifications, unreadCount, isLoading, markAsRead }
+  // Marcar todas como leídas con actualización optimista y rollback ante error
+  async function markAllAsRead(): Promise<void> {
+    if (!user?.id) return
+
+    const snapshot = notifications
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+
+    const supabase = createClient()
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", user.id)
+
+    if (error) {
+      setNotifications(snapshot)
+      console.error("[use-notifications] Error al marcar todas como leídas:", error)
+    }
+  }
+
+  return { notifications, unreadCount, isLoading, markAsRead, markAllAsRead }
 }

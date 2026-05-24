@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Check } from "lucide-react"
+import { Bell, Check, CheckCheck } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
 import {
   Popover,
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function NotificationsPopover() {
-  const { notifications, unreadCount, isLoading, markAsRead } = useNotifications()
+  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } = useNotifications()
 
   return (
     <Popover>
@@ -37,8 +37,19 @@ export function NotificationsPopover() {
         )}
       </div>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="px-3 py-2.5 border-b border-border">
+        <div className="px-3 py-2.5 border-b border-border flex items-center justify-between gap-2">
           <p className="font-semibold text-sm">Notificaciones</p>
+          {unreadCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
+              onClick={() => markAllAsRead()}
+            >
+              <CheckCheck size={12} className="mr-1" />
+              Marcar todas como leídas
+            </Button>
+          )}
         </div>
 
         {isLoading ? (
