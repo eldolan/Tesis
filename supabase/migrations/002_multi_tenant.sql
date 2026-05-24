@@ -34,6 +34,7 @@ CREATE TABLE decisiones_riego (
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     decision TEXT NOT NULL,
     razon TEXT,
+    sensor_data JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -41,6 +42,7 @@ CREATE TABLE decisiones_riego (
 CREATE TABLE chat_sessions (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -51,6 +53,7 @@ CREATE TABLE documents (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     content TEXT,
+    type TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -290,6 +293,7 @@ CREATE INDEX idx_riego_40_user_id ON sensor_riego_40(user_id);
 CREATE INDEX idx_riego_60_user_id ON sensor_riego_60(user_id);
 CREATE INDEX idx_fertilizante_user_id ON sensor_fertilizante(user_id);
 CREATE INDEX idx_onboard_user_id ON sensor_onboard(user_id);
+CREATE INDEX idx_onboard_created_at ON sensor_onboard(created_at DESC);
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_decisiones_riego_user_id ON decisiones_riego(user_id);
 CREATE INDEX idx_chat_sessions_user_id ON chat_sessions(user_id);
