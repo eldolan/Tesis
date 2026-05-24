@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase/server"
+
 export const maxDuration = 60
 
 export async function POST(request: Request) {
@@ -8,6 +10,15 @@ export async function POST(request: Request) {
 
   if (!n8nUrl || !n8nToken) {
     return Response.json({ error: "N8N no configurado" }, { status: 500 })
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return Response.json({ error: "No autenticado" }, { status: 401 })
   }
 
   const messages = body.messages ?? []
@@ -24,7 +35,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         messages,
-        session_id: body.session_id ?? "default",
+        session_id: user.id,
       }),
     })
 
