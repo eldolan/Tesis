@@ -65,6 +65,9 @@ export function LoginForm() {
           setError(authError.message === "Invalid login credentials"
             ? "Credenciales incorrectas."
             : authError.message)
+        } else {
+          window.location.href = "/"
+          return
         }
       } else {
         const { error: authError } = await supabase.auth.signUp({
