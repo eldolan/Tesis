@@ -11,6 +11,9 @@ import {
   Loader2,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/contexts/auth-context"
+
+type ConnectionState = "connecting" | "connected" | "disconnected"
 
 // Lista configurable de tablas candidatas — agregar aquí al incorporar nuevo hardware
 const SENSOR_TABLES = [
@@ -33,9 +36,10 @@ interface SensorDescubierto {
 }
 
 export function SystemStatus() {
+  const { user } = useAuth()
   const [sensores, setSensores] = useState<SensorDescubierto[]>([])
   const [cargando, setCargando] = useState(true)
-  const [realtimeConnected, setRealtimeConnected] = useState(false)
+  const [connectionState, setConnectionState] = useState<ConnectionState>("connecting")
   const [irrigating, setIrrigating] = useState(false)
 
   useEffect(() => {
@@ -88,15 +92,37 @@ export function SystemStatus() {
     }
 
     descubrirSensores()
-
-    // Verificar conexión realtime
-    const channel = createClient().channel("status-check")
-    channel.subscribe((status) => {
-      setRealtimeConnected(status === "SUBSCRIBED")
-    })
-
-    return () => { createClient().removeChannel(channel) }
   }, [])
+
+  // Suscripción realtime — estado tri-valor (connecting / connected / disconnected)
+  useEffect(() => {
+    if (!user?.id) return
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel("realtime-status")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "sensor_riego_20",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {}
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setConnectionState("connected")
+        } else if (["TIMED_OUT", "CHANNEL_ERROR", "CLOSED"].includes(status)) {
+          setConnectionState("disconnected")
+        } else {
+          setConnectionState("connecting")
+        }
+      })
+
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id])
 
   const totalDescubiertos = sensores.length
   const onlineCount = sensores.filter((s) => s.status === "online").length
@@ -111,16 +137,26 @@ export function SystemStatus() {
       <div className="space-y-2.5 flex-1 flex flex-col justify-center">
         {/* Conexión realtime */}
         <div className="flex items-center gap-2.5 text-sm">
-          {realtimeConnected ? (
+          {connectionState === "connected" ? (
             <Wifi size={16} className="text-green-400 shrink-0" />
+          ) : connectionState === "connecting" ? (
+            <Wifi size={16} className="text-yellow-500 shrink-0" />
           ) : (
             <WifiOff size={16} className="text-red-400 shrink-0" />
           )}
           <span className="text-foreground">Conexion Realtime</span>
           <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
-            realtimeConnected ? "bg-green-400/10 text-green-400" : "bg-red-400/10 text-red-400"
+            connectionState === "connected"
+              ? "bg-green-400/10 text-green-400"
+              : connectionState === "connecting"
+              ? "bg-yellow-500/10 text-yellow-500"
+              : "bg-red-400/10 text-red-400"
           }`}>
-            {realtimeConnected ? "Conectado" : "Desconectado"}
+            {connectionState === "connected"
+              ? "Conectado"
+              : connectionState === "connecting"
+              ? "Conectando…"
+              : "Desconectado"}
           </span>
         </div>
 
@@ -182,21 +218,31 @@ export function SystemStatus() {
           </span>
         </div>
 
-        {/* Salud general: Óptimo solo si TODOS los sensores descubiertos están online */}
-        <div className="flex items-center gap-2.5 text-sm">
-          <Activity
-            size={16}
-            className={`shrink-0 ${todosOnline && realtimeConnected ? "text-green-400" : "text-yellow-400"}`}
-          />
-          <span className="text-foreground">Salud General</span>
-          <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
-            todosOnline && realtimeConnected
-              ? "bg-green-400/10 text-green-400"
-              : "bg-yellow-400/10 text-yellow-400"
-          }`}>
-            {todosOnline && realtimeConnected ? "Optimo" : "Parcial"}
-          </span>
-        </div>
+        {/* Salud general: Óptimo / Parcial / Sin datos según sensores + connectionState */}
+        {(() => {
+          const esOptimo = todosOnline && connectionState === "connected"
+          const esSinDatos = totalDescubiertos === 0 && connectionState === "disconnected"
+          const activityColor = esOptimo
+            ? "text-green-400"
+            : esSinDatos
+            ? "text-red-400"
+            : "text-yellow-400"
+          const badgeClass = esOptimo
+            ? "bg-green-400/10 text-green-400"
+            : esSinDatos
+            ? "bg-red-400/10 text-red-400"
+            : "bg-yellow-400/10 text-yellow-400"
+          const label = esOptimo ? "Óptimo" : esSinDatos ? "Sin datos" : "Parcial"
+          return (
+            <div className="flex items-center gap-2.5 text-sm">
+              <Activity size={16} className={`shrink-0 ${activityColor}`} />
+              <span className="text-foreground">Salud General</span>
+              <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${badgeClass}`}>
+                {label}
+              </span>
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
