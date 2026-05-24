@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function NotificationsPopover() {
@@ -53,47 +52,43 @@ export function NotificationsPopover() {
             <p className="text-sm text-muted-foreground">Sin notificaciones</p>
           </div>
         ) : (
-          // Wrapper con max-h y overflow-hidden para que el Viewport de Base UI
-          // (height:100%) resuelva contra una altura acotada y el scroll funcione
-          <div className="max-h-[320px] overflow-hidden">
-            <ScrollArea className="h-full">
-              <div className="divide-y divide-border">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`px-3 py-2.5 flex flex-col gap-1 ${
-                      notification.read === true ? "opacity-60" : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-medium text-sm leading-tight">
-                        {notification.title}
-                      </p>
-                      {notification.read !== true && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <Check size={12} className="mr-1" />
-                          Leída
-                        </Button>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-snug">
-                      {notification.message}
+          <div className="max-h-[320px] overflow-y-auto">
+            <div className="divide-y divide-border">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`px-3 py-2.5 flex flex-col gap-1 ${
+                    notification.read === true ? "opacity-60" : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium text-sm leading-tight">
+                      {notification.title}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {new Date(notification.created_at).toLocaleDateString("es-CL", {
-                        day: "numeric",
-                        month: "short",
-                      })}
-                    </p>
+                    {notification.read !== true && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <Check size={12} className="mr-1" />
+                        Leída
+                      </Button>
+                    )}
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    {notification.message}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {new Date(notification.created_at).toLocaleDateString("es-CL", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </PopoverContent>

@@ -1,7 +1,7 @@
 # Project Profile
 
 > Generado por sdd-init — actualizar en cada re-ejecución (upsert, no duplicar)
-> Última actualización: 2026-05-24 (actualizado por sdd-init: fix-dashboard-frontend)
+> Última actualización: 2026-05-24 (actualizado por sdd-init: fix-notifications-scroll-native)
 
 ## Stack tecnológico
 
