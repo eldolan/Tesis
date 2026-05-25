@@ -70,7 +70,7 @@ export function DashboardGrid() {
       {/* Bento grid */}
       <main className="flex-1 p-4 md:p-5">
         <div className="@container mx-auto max-w-[1600px]">
-          <div className="grid gap-3 grid-cols-1 @xl:grid-cols-2 @5xl:grid-cols-6">
+          <div className="grid gap-4 grid-cols-1 @xl:grid-cols-2 @5xl:grid-cols-6">
 
             {/* Weather Widget — 2 / 6 cols */}
             <BentoCard delay={80} className="@5xl:col-span-2 min-h-[220px]">
@@ -109,7 +109,7 @@ export function DashboardGrid() {
             </BentoCard>
 
             {/* Soil Chat — 2 / 6 cols */}
-            <BentoCard delay={400} className="@5xl:col-span-2 h-[480px]">
+            <BentoCard delay={400} className="@xl:col-span-2 @5xl:col-span-2 h-[480px]">
               <div className="flex flex-col h-full">
                 <div className="px-6 pt-5 pb-1">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
