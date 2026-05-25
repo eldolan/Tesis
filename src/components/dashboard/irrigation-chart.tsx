@@ -92,7 +92,7 @@ export function IrrigationChart() {
                 fill: "#c9c9c9",
                 fontSize: 12,
               }}
-              domain={viewMode === "sum" ? [40, 100] : ["auto", "auto"]}
+              domain={[0, 100]}
             />
             <Tooltip
               contentStyle={{ backgroundColor: "#2a2a2a", border: "1px solid #272832", color: "#c9c9c9" }}
@@ -105,7 +105,7 @@ export function IrrigationChart() {
                 <ReferenceArea y1={70} y2={90} fill="#00E396" fillOpacity={0.1} label={{ value: "Punto de Recarga", fill: "#fff", fontSize: 10, position: "insideTopLeft" }} />
                 <ReferenceArea y1={55} y2={70} fill="#FEB019" fillOpacity={0.1} label={{ value: "Inicio de Estrés", fill: "#fff", fontSize: 10, position: "insideTopLeft" }} />
                 <ReferenceArea y1={40} y2={55} fill="#fe2819" fillOpacity={0.1} label={{ value: "Peligro Estrés Extremo", fill: "#fff", fontSize: 10, position: "insideTopLeft" }} />
-                <Line type="monotone" dataKey="average" stroke="#0071FF" strokeWidth={3} dot={false} name="Sumatoria" />
+                <Line type="monotone" dataKey="average" stroke="#0071FF" strokeWidth={3} dot={false} name="Sumatoria" connectNulls={false} />
               </>
             )}
 
@@ -128,9 +128,9 @@ export function IrrigationChart() {
                   return null
                 })}
                 <Legend wrapperStyle={{ color: "#c9c9c9" }} />
-                <Line type="monotone" dataKey="sensor20" stroke="#0071FF" strokeWidth={3} dot={false} name="Sensor 20cm" />
-                <Line type="monotone" dataKey="sensor40" stroke="#00E396" strokeWidth={3} dot={false} name="Sensor 40cm" />
-                <Line type="monotone" dataKey="sensor60" stroke="#FEB019" strokeWidth={3} dot={false} name="Sensor 60cm" />
+                <Line type="monotone" dataKey="sensor20" stroke="#0071FF" strokeWidth={3} dot={false} name="Sensor 20cm" connectNulls={false} />
+                <Line type="monotone" dataKey="sensor40" stroke="#00E396" strokeWidth={3} dot={false} name="Sensor 40cm" connectNulls={false} />
+                <Line type="monotone" dataKey="sensor60" stroke="#FEB019" strokeWidth={3} dot={false} name="Sensor 60cm" connectNulls={false} />
               </>
             )}
           </LineChart>

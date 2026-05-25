@@ -6,6 +6,7 @@ import { IrrigationChart } from "./irrigation-chart"
 import { PlantTimeline } from "./plant-timeline"
 import { SystemStatus } from "./system-status"
 import { SoilChat } from "./soil-chat"
+import { NotificationsPopover } from "./notifications-popover"
 import { FadeContent } from "@/components/ui/fade-content"
 import { useAuth } from "@/contexts/auth-context"
 import { LogOut } from "lucide-react"
@@ -53,6 +54,7 @@ export function DashboardGrid() {
             <span className="text-xs text-muted-foreground hidden sm:block">
               {user?.email}
             </span>
+            <NotificationsPopover />
             <Button
               variant="ghost"
               size="sm"
