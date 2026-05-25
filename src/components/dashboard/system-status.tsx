@@ -9,6 +9,7 @@ import {
   Activity,
   CircleDot,
   Loader2,
+  Thermometer,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/contexts/auth-context"
@@ -32,7 +33,27 @@ interface SensorDescubierto {
   label: string
   depth: number
   status: "online" | "offline"
+  humedad: number | null
   lastReading: string
+}
+
+type AmbientReading = { temperatura: number | null; humedad: number | null } | null
+
+// Helper de fecha compacto: distingue lecturas de hoy vs anteriores
+function formatLecturaCompacta(date: Date): string {
+  const esHoy = date.toDateString() === new Date().toDateString()
+  if (esHoy) {
+    return (
+      "hoy " +
+      date.toLocaleString("es-CL", { hour: "2-digit", minute: "2-digit" })
+    )
+  }
+  return date.toLocaleString("es-CL", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
 }
 
 export function SystemStatus() {
@@ -41,19 +62,25 @@ export function SystemStatus() {
   const [cargando, setCargando] = useState(true)
   const [connectionState, setConnectionState] = useState<ConnectionState>("connecting")
   const [irrigating, setIrrigating] = useState(false)
+  const [ambiental, setAmbiental] = useState<AmbientReading>(null)
 
   useEffect(() => {
+    if (!user?.id) return
+
     async function descubrirSensores() {
       setCargando(true)
       const ahora = new Date()
       const hace24h = new Date(ahora.getTime() - VENTANA_DESCUBRIMIENTO_H * 60 * 60 * 1000)
       const descubiertos: SensorDescubierto[] = []
+      let regandoAlguno = false
+
+      const client = createClient()
 
       // Consultar cada tabla candidata — solo incluir las que tienen datos recientes
       for (const def of SENSOR_TABLES) {
-        const { data, error } = await createClient()
+        const { data, error } = await client
           .from(def.table)
-          .select("timestamp, es_evento_riego")
+          .select("timestamp, humedad, es_evento_riego")
           .gte("timestamp", hace24h.toISOString())
           .order("timestamp", { ascending: false })
           .limit(1)
@@ -66,23 +93,35 @@ export function SystemStatus() {
         const diffMinutos = (ahora.getTime() - ultimaLectura.getTime()) / 60000
         const status: "online" | "offline" = diffMinutos < UMBRAL_ONLINE_MIN ? "online" : "offline"
 
-        // Detectar evento de riego en el primer sensor con datos
-        if (descubiertos.length === 0 && data.es_evento_riego) {
-          setIrrigating(true)
-        }
+        // Acumular flag de riego — evalúa TODOS los sensores (no solo el primero)
+        if (data.es_evento_riego) regandoAlguno = true
 
         descubiertos.push({
           table: def.table,
           label: def.label,
           depth: def.depth,
           status,
-          lastReading: ultimaLectura.toLocaleString("es-CL", {
-            day: "2-digit",
-            month: "short",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          humedad: data.humedad ?? null,
+          lastReading: formatLecturaCompacta(ultimaLectura),
         })
+      }
+
+      // Llamar setIrrigating una sola vez tras el loop (cubre todos los sensores)
+      setIrrigating(regandoAlguno)
+
+      // Query separada al sensor ambiental, ordenada por created_at (no timestamp)
+      const { data: ambData, error: ambError } = await client
+        .from("sensor_onboard")
+        .select("temperatura, humedad, created_at")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!ambError && ambData) {
+        setAmbiental({ temperatura: ambData.temperatura, humedad: ambData.humedad })
+      } else {
+        setAmbiental(null)
       }
 
       // Ordenar por profundidad ascendente
@@ -92,7 +131,7 @@ export function SystemStatus() {
     }
 
     descubrirSensores()
-  }, [])
+  }, [user?.id])
 
   // Suscripción realtime — estado tri-valor (connecting / connected / disconnected)
   useEffect(() => {
@@ -191,7 +230,7 @@ export function SystemStatus() {
           </div>
         )}
 
-        {/* Sensores descubiertos dinámicamente */}
+        {/* Sensores de riego descubiertos dinámicamente */}
         {sensores.map((sensor) => (
           <div key={sensor.table} className="flex items-center gap-2.5 text-sm pl-2">
             <CircleDot
@@ -202,10 +241,26 @@ export function SystemStatus() {
             <span className={`ml-auto text-[10px] ${
               sensor.status === "online" ? "text-green-400" : "text-muted-foreground"
             }`}>
-              {sensor.lastReading}
+              {sensor.humedad !== null
+                ? `${Math.round(sensor.humedad)}% · ${sensor.lastReading}`
+                : "Sin datos"}
             </span>
           </div>
         ))}
+
+        {/* Sensor ambiental — temperatura y humedad de sensor_onboard */}
+        <div className="flex items-center gap-2.5 text-sm pl-2">
+          <Thermometer
+            size={12}
+            className={`shrink-0 ${ambiental !== null ? "text-green-400" : "text-muted-foreground"}`}
+          />
+          <span className="text-muted-foreground">Sensor Ambiental</span>
+          <span className={`ml-auto text-[10px] ${ambiental !== null ? "text-green-400" : "text-muted-foreground"}`}>
+            {ambiental !== null
+              ? `${ambiental.temperatura}°C · ${ambiental.humedad}%`
+              : "Sin datos"}
+          </span>
+        </div>
 
         {/* Estado del riego */}
         <div className="flex items-center gap-2.5 text-sm">
