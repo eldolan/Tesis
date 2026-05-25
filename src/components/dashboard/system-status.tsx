@@ -131,6 +131,7 @@ export function SystemStatus() {
     }
 
     descubrirSensores()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
   // Suscripción realtime — estado tri-valor (connecting / connected / disconnected)
