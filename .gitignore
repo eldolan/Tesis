@@ -50,3 +50,27 @@ instance
 Datos BD
 WARP.md
 sensor_client.py
+
+# --- Solo-Vercel: lo no desplegable se mantiene local, fuera del repo ---
+# Pipeline SDD / QA (worktrees y memoria de proceso)
+/.sdd/
+/memory/
+# Backend/infra ajeno al deploy de Vercel
+/supabase/
+/codigo sensores/
+/scripts/
+/.github/
+# Datos y modelos ML (viven en el servidor n8n / fuera del repo web)
+/city.list.json
+*.keras
+*.pkl
+# Documentación de proceso / instrucciones de agente (no parte del deploy)
+/n8n-changes-required.md
+/CONTEXTO_PROYECTO.md
+/PLAN_MIGRACION_N8N.md
+/AGENTS.md
+/CLAUDE.md
+/bpmn-diagrams/
+/documentacion/
+/embeddings/
+/n8n-workflows/
