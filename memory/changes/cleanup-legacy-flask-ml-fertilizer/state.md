@@ -2,10 +2,10 @@
 type: change-state
 change_name: "cleanup-legacy-flask-ml-fertilizer"
 domain: "debt"
-status: active
+status: completed
 fast_path: "spec-first"
-current_phase: sdd-verify
-phases_completed: [sdd-init, sdd-propose, sdd-spec, sdd-tasks, sdd-apply]
+current_phase: ""
+phases_completed: [sdd-init, sdd-propose, sdd-spec, sdd-tasks, sdd-apply, sdd-verify, sdd-archive]
 spec_refs:
   - "[[no-flask-legacy-app]]"
   - "[[no-ml-dead-artifacts]]"
@@ -22,6 +22,8 @@ updated: "2026-05-29"
 # sdd-spec completed: 2026-05-29
 # sdd-tasks completed: 2026-05-29
 # sdd-apply completed: 2026-05-29
+# sdd-verify completed: 2026-05-29
+# sdd-archive completed: 2026-05-29
 tags: [change]
 ---
 

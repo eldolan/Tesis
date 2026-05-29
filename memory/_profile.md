@@ -1,7 +1,7 @@
 # Project Profile
 
 > Generado por sdd-init — actualizar en cada re-ejecución (upsert, no duplicar)
-> Última actualización: 2026-05-24 (actualizado por sdd-init: fix-notifications-scroll-native)
+> Última actualización: 2026-05-29 (actualizado por sdd-init: cleanup-legacy-flask-ml-fertilizer)
 
 ## Stack tecnológico
 
@@ -98,3 +98,13 @@ src/
 - La función `proxy` (Next.js 16) excluye `/api/upload` del matcher para permitir ingesta sin cookie de sesión
 - Los hooks implementan doble defensa: RLS en DB + `.eq("user_id", user.id)` en query explícita
 - `@supabase/ssr ^0.10.0` incorporado al stack como dependencia de producción
+
+## Deuda técnica conocida (2026-05-29)
+
+<!-- Resuelto en cleanup-legacy-flask-ml-fertilizer (PR #pending, 2026-05-29):
+     Flask legacy (app.py, wsgi.py, panel_control/), artefactos ML (*.keras/*.pkl),
+     city.list.json (~41 MB), subsistema fertilizante/NPK (fertilizer-chart, use-fertilizer-data,
+     lógica NPK en /api/upload), tipos huérfanos (SensorFertilizante, FertilizerData) -->
+
+- **Directorio duplicado**: `tesis-nextjs/` — copia stale de componentes, código muerto (detectado en fix-dashboard-frontend)
+- **AGENTS.md desactualizado**: describe app Flask como sistema principal; la arquitectura vigente es Next.js 16 + n8n + Supabase

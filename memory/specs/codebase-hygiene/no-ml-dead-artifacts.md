@@ -7,7 +7,7 @@ domain: "debt"
 delta_type: null
 supersedes: null
 superseded_by: null
-status: review
+status: completed
 assigned_agent: "sdd-apply"
 priority: high
 depends_on: []
@@ -15,7 +15,8 @@ change_ref: "[[cleanup-legacy-flask-ml-fertilizer]]"
 worktree: "/home/dylan/herramientas-ia/projects/tesis/.sdd/worktrees/cleanup-legacy-flask-ml-fertilizer"
 feature_branch: "feature/cleanup-legacy-flask-ml-fertilizer"
 commits: ["c64c92e"]
-mr: ""
+mr: "pending"
+updated: "2026-05-29"
 acceptance_criteria:
   - "[x] El modelo Keras clasificador_cultivos.keras ha sido eliminado del repositorio"
   - "[x] Los archivos de codificación y escalado coder_etiquetas.pkl y escalador_caracteristicas.pkl han sido eliminados del repositorio"
@@ -33,7 +34,7 @@ scope:
   - "coder_etiquetas.pkl"
   - "escalador_caracteristicas.pkl"
   - "city.list.json"
-verified_at: null
+verified_at: "2026-05-29"
 
 created: "2026-05-29"
 updated: "2026-05-29"

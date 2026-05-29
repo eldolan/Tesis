@@ -7,7 +7,7 @@ domain: "debt"
 delta_type: null
 supersedes: null
 superseded_by: null
-status: review
+status: completed
 assigned_agent: "sdd-apply"
 priority: high
 depends_on:
@@ -16,7 +16,8 @@ change_ref: "[[cleanup-legacy-flask-ml-fertilizer]]"
 worktree: "/home/dylan/herramientas-ia/projects/tesis/.sdd/worktrees/cleanup-legacy-flask-ml-fertilizer"
 feature_branch: "feature/cleanup-legacy-flask-ml-fertilizer"
 commits: ["c64c92e"]
-mr: ""
+mr: "pending"
+updated: "2026-05-29"
 acceptance_criteria:
   - "[x] El componente fertilizer-chart.tsx ha sido eliminado del repositorio"
   - "[x] El hook use-fertilizer-data.ts ha sido eliminado del repositorio"
@@ -38,7 +39,7 @@ scope:
   - "src/hooks/use-fertilizer-data.ts"
   - "src/app/api/upload/route.ts"
   - "src/components/dashboard/DashboardGrid.tsx"
-verified_at: null
+verified_at: "2026-05-29"
 
 created: "2026-05-29"
 updated: "2026-05-29"
