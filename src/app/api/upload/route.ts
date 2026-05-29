@@ -134,7 +134,6 @@ export async function POST(request: Request) {
     const batch20: Record<string, unknown>[] = []
     const batch40: Record<string, unknown>[] = []
     const batch60: Record<string, unknown>[] = []
-    const batchFert: Record<string, unknown>[] = []
     const batchOnboard: Record<string, unknown>[] = []
 
     for (let i = 0; i < rows.length; i++) {
@@ -196,15 +195,6 @@ export async function POST(request: Request) {
           lastHumidity["60cm"] = parsed.hum_60
         }
 
-        // Fertilizante NPK — siempre presente
-        batchFert.push({
-          user_id,
-          timestamp: parsed.timestamp,
-          nitrogen: Math.round(parsed.n_20 * 100) / 100,
-          phosphorus: Math.round(parsed.p_20 * 100) / 100,
-          potassium: Math.round(parsed.k_20 * 100) / 100,
-        })
-
         // Lecturas onboard del dispositivo (temperatura y humedad del sensor físico)
         if (parsed.onboard_temp !== null || parsed.onboard_hum !== null) {
           batchOnboard.push({
@@ -244,13 +234,6 @@ export async function POST(request: Request) {
         supabaseAdmin
           .from("sensor_riego_60")
           .upsert(batch60, { onConflict: "user_id,timestamp", ignoreDuplicates: true })
-      )
-    }
-    if (batchFert.length > 0) {
-      insertPromises.push(
-        supabaseAdmin
-          .from("sensor_fertilizante")
-          .upsert(batchFert, { onConflict: "user_id,timestamp", ignoreDuplicates: true })
       )
     }
     if (batchOnboard.length > 0) {
