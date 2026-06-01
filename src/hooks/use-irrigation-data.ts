@@ -20,6 +20,10 @@ interface IrrigationState {
   rows20: SensorRiego[]
   rows40: SensorRiego[]
   rows60: SensorRiego[]
+  // Filas crudas (sin filtrar es_valido) — solo para calcular validationPending
+  rawRows20: SensorRiego[]
+  rawRows40: SensorRiego[]
+  rawRows60: SensorRiego[]
   period: IrrigationPeriod
   isLoading: boolean
   userId: string | null
@@ -27,22 +31,28 @@ interface IrrigationState {
 
 type IrrigationAction =
   | { type: "FETCH_START" }
-  | { type: "FETCH_SUCCESS"; rows20: SensorRiego[]; rows40: SensorRiego[]; rows60: SensorRiego[]; userId: string }
+  | { type: "FETCH_SUCCESS"; rows20: SensorRiego[]; rows40: SensorRiego[]; rows60: SensorRiego[]; rawRows20: SensorRiego[]; rawRows40: SensorRiego[]; rawRows60: SensorRiego[]; userId: string }
   | { type: "APPEND_20"; row: SensorRiego }
   | { type: "APPEND_40"; row: SensorRiego }
   | { type: "APPEND_60"; row: SensorRiego }
+  | { type: "APPEND_RAW_20"; row: SensorRiego }
+  | { type: "APPEND_RAW_40"; row: SensorRiego }
+  | { type: "APPEND_RAW_60"; row: SensorRiego }
   | { type: "SET_PERIOD"; period: IrrigationPeriod }
 
 function irrigationReducer(state: IrrigationState, action: IrrigationAction): IrrigationState {
   switch (action.type) {
     case "FETCH_START":
-      return { ...state, rows20: [], rows40: [], rows60: [], isLoading: true }
+      return { ...state, rows20: [], rows40: [], rows60: [], rawRows20: [], rawRows40: [], rawRows60: [], isLoading: true }
     case "FETCH_SUCCESS":
       return {
         ...state,
         rows20: action.rows20,
         rows40: action.rows40,
         rows60: action.rows60,
+        rawRows20: action.rawRows20,
+        rawRows40: action.rawRows40,
+        rawRows60: action.rawRows60,
         userId: action.userId,
         isLoading: false,
       }
@@ -52,6 +62,12 @@ function irrigationReducer(state: IrrigationState, action: IrrigationAction): Ir
       return { ...state, rows40: [...state.rows40, action.row] }
     case "APPEND_60":
       return { ...state, rows60: [...state.rows60, action.row] }
+    case "APPEND_RAW_20":
+      return { ...state, rawRows20: [...state.rawRows20, action.row] }
+    case "APPEND_RAW_40":
+      return { ...state, rawRows40: [...state.rawRows40, action.row] }
+    case "APPEND_RAW_60":
+      return { ...state, rawRows60: [...state.rawRows60, action.row] }
     case "SET_PERIOD":
       return { ...state, period: action.period }
     default:
@@ -63,6 +79,9 @@ const initialState: IrrigationState = {
   rows20: [],
   rows40: [],
   rows60: [],
+  rawRows20: [],
+  rawRows40: [],
+  rawRows60: [],
   period: "day",
   isLoading: true,
   userId: null,
@@ -70,7 +89,7 @@ const initialState: IrrigationState = {
 
 export function useIrrigationData(): UseIrrigationDataResult {
   const [state, dispatch] = useReducer(irrigationReducer, initialState)
-  const { rows20, rows40, rows60, period, isLoading, userId } = state
+  const { rows20, rows40, rows60, rawRows20, rawRows40, rawRows60, period, isLoading, userId } = state
 
   // Efecto 1: Fetch inicial (se re-ejecuta cuando cambia el período)
   useEffect(() => {
@@ -109,12 +128,22 @@ export function useIrrigationData(): UseIrrigationDataResult {
 
       if (cancelled) return
 
-      // Filtrar filas inválidas (es_valido !== false incluye true y null/undefined)
-      const valid20 = ((res20.data ?? []) as SensorRiego[]).filter(r => r.es_valido !== false)
-      const valid40 = ((res40.data ?? []) as SensorRiego[]).filter(r => r.es_valido !== false)
-      const valid60 = ((res60.data ?? []) as SensorRiego[]).filter(r => r.es_valido !== false)
+      // Filas crudas (sin filtrar) — solo para calcular validationPending
+      const raw20 = (res20.data ?? []) as SensorRiego[]
+      const raw40 = (res40.data ?? []) as SensorRiego[]
+      const raw60 = (res60.data ?? []) as SensorRiego[]
 
-      dispatch({ type: "FETCH_SUCCESS", rows20: valid20, rows40: valid40, rows60: valid60, userId: user.id })
+      // Filtrar filas inválidas para las series del gráfico (es_valido !== false incluye true y null/undefined)
+      const valid20 = raw20.filter(r => r.es_valido !== false)
+      const valid40 = raw40.filter(r => r.es_valido !== false)
+      const valid60 = raw60.filter(r => r.es_valido !== false)
+
+      dispatch({
+        type: "FETCH_SUCCESS",
+        rows20: valid20, rows40: valid40, rows60: valid60,
+        rawRows20: raw20, rawRows40: raw40, rawRows60: raw60,
+        userId: user.id,
+      })
     }
 
     fetchData()
@@ -144,9 +173,11 @@ export function useIrrigationData(): UseIrrigationDataResult {
         },
         (payload) => {
           const row = payload.new as SensorRiego
-          // Descartar filas inválidas o fuera del rango temporal
-          if (row.es_valido === false) return
           if (new Date(row.timestamp).getTime() < rangeStart) return
+          // Acumular fila cruda para cálculo de validationPending
+          dispatch({ type: "APPEND_RAW_20", row })
+          // Solo agregar a las series del gráfico si la fila es válida
+          if (row.es_valido === false) return
           dispatch({ type: "APPEND_20", row })
         }
       )
@@ -160,8 +191,9 @@ export function useIrrigationData(): UseIrrigationDataResult {
         },
         (payload) => {
           const row = payload.new as SensorRiego
-          if (row.es_valido === false) return
           if (new Date(row.timestamp).getTime() < rangeStart) return
+          dispatch({ type: "APPEND_RAW_40", row })
+          if (row.es_valido === false) return
           dispatch({ type: "APPEND_40", row })
         }
       )
@@ -175,8 +207,9 @@ export function useIrrigationData(): UseIrrigationDataResult {
         },
         (payload) => {
           const row = payload.new as SensorRiego
-          if (row.es_valido === false) return
           if (new Date(row.timestamp).getTime() < rangeStart) return
+          dispatch({ type: "APPEND_RAW_60", row })
+          if (row.es_valido === false) return
           dispatch({ type: "APPEND_60", row })
         }
       )
@@ -282,23 +315,24 @@ export function useIrrigationData(): UseIrrigationDataResult {
   }, [points, visibleSeries])
 
   // useMemo: aviso de validación (>50% del bucket reciente es inválido)
-  // La "ventana reciente" se define relativa al último timestamp de las rows
+  // Usa rawRows (sin filtrar) para que las filas con es_valido === false sean visibles al cómputo.
+  // La "ventana reciente" se define relativa al último timestamp de las filas crudas
   // para evitar Date.now() (función impura en fase de render).
   const validationPending = useMemo(() => {
     const bucketMs = bucketMsForPeriod(period)
-    const allRows = [...rows20, ...rows40, ...rows60]
-    if (allRows.length === 0) return false
+    const allRawRows = [...rawRows20, ...rawRows40, ...rawRows60]
+    if (allRawRows.length === 0) return false
 
-    // Último timestamp disponible en las rows (evita Date.now() impuro)
-    const latestTs = Math.max(...allRows.map(r => new Date(r.timestamp).getTime()))
+    // Último timestamp disponible en las filas crudas (evita Date.now() impuro)
+    const latestTs = Math.max(...allRawRows.map(r => new Date(r.timestamp).getTime()))
     const windowStart = latestTs - bucketMs
 
-    const ventana = allRows.filter(r => new Date(r.timestamp).getTime() >= windowStart)
+    const ventana = allRawRows.filter(r => new Date(r.timestamp).getTime() >= windowStart)
     if (ventana.length === 0) return false
 
     const invalidos = ventana.filter(r => r.es_valido === false).length
     return invalidos / ventana.length > 0.5
-  }, [rows20, rows40, rows60, period])
+  }, [rawRows20, rawRows40, rawRows60, period])
 
   const setPeriod = (p: IrrigationPeriod) => dispatch({ type: "SET_PERIOD", period: p })
 
