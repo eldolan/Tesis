@@ -117,3 +117,23 @@ export interface UseIrrigationDataResult {
   setPeriod: (p: IrrigationPeriod) => void
 }
 
+// --- Configuración del cultivo ---
+
+export type FaseFenologica =
+  | "establecimiento"
+  | "vegetativo"
+  | "floracion"
+  | "desarrollo_fruto"
+  | "maduracion"
+  | "senescencia"
+
+export type NivelEstres = "ninguno" | "leve" | "moderado" | "severo"
+
+export interface CultivoConfig {
+  user_id: string
+  especie: string
+  fase_fenologica: FaseFenologica
+  nivel_estres: NivelEstres
+  updated_at: string
+}
+
