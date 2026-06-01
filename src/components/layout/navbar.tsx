@@ -6,7 +6,6 @@ import { MobileSidebar } from "./mobile-sidebar"
 const navLinks = [
   { label: "Inicio", href: "#", active: true },
   { label: "Riego", href: "#" },
-  { label: "Fertilizante", href: "#" },
   { label: "Contacto", href: "#" },
 ]
 
