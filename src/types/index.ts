@@ -9,15 +9,6 @@ export interface SensorRiego {
   es_evento_riego: boolean
 }
 
-export interface SensorFertilizante {
-  id: number
-  user_id: string
-  timestamp: string
-  nitrogen: number
-  phosphorus: number
-  potassium: number
-}
-
 export interface SensorOnboard {
   id: number
   user_id: string
@@ -83,10 +74,3 @@ export interface IrrigationData {
   irrigation_events: string[]
 }
 
-export interface FertilizerData {
-  dates: string[]
-  nitrogen: number[]
-  phosphorus: number[]
-  potassium: number[]
-  fertilization_events: string[]
-}
