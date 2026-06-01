@@ -199,7 +199,10 @@ export function IrrigationChart() {
               <ChartTooltip
                 content={
                   <ChartTooltipContent
-                    labelFormatter={(value) => tickFormatter(value as number)}
+                    labelFormatter={(_value, payload) => {
+                      const ts = payload?.[0]?.payload?.ts as number | undefined
+                      return typeof ts === "number" ? tickFormatter(ts) : ""
+                    }}
                     formatter={(value) => [`${Math.round(value as number)}%`]}
                   />
                 }
