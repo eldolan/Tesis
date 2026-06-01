@@ -1,24 +1,30 @@
 "use client"
 
-import React, { useContext } from "react"
+import React, { useState } from "react"
+import type { CSSProperties } from "react"
 import {
-  XYChart,
-  AnimatedLineSeries,
-  AnimatedAxis,
-  AnimatedGrid,
-  Tooltip,
-  buildChartTheme,
-  DataContext,
-} from "@visx/xychart"
-import { ParentSize } from "@visx/responsive"
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ReferenceArea,
+} from "recharts"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from "@/components/ui/chart"
+import type { ChartConfig } from "@/components/ui/chart"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useIrrigationData } from "@/hooks/use-irrigation-data"
+import type { IrrigationPeriod } from "@/types"
 
 type ViewMode = "stacked" | "sum"
-
-// Colores de la página
-const accentColors = ["#0071FF", "#00E396", "#FEB019"] as const
 
 // Bandas agronómicas (solo en vista Sumatoria)
 const ZONAS_AGRONOMICAS = [
@@ -28,76 +34,30 @@ const ZONAS_AGRONOMICAS = [
   { y1: 40, y2: 55,  color: "#fe2819", label: "Peligro Estrés Extremo" },
 ] as const
 
-// Tema personalizado del chart
-const chartTheme = buildChartTheme({
-  colors: [...accentColors],
-  backgroundColor: "transparent",
-  gridColor: "#55555533",
-  tickLength: 4,
-  gridColorDark: "#55555533",
-})
-
-// Punto del dataset normalizado
-interface ChartPoint {
-  date: Date
-  sensor20: number | null
-  sensor40: number | null
-  sensor60: number | null
-  average: number | null
+const PERIOD_LABELS: Record<IrrigationPeriod, string> = {
+  day:   "Día",
+  week:  "Semana",
+  month: "Mes",
+  year:  "Año",
 }
 
-// Componente interno que accede al DataContext de XYChart para dibujar bandas
-function BandasAgronomicas() {
-  const ctx = useContext(DataContext)
-  if (!ctx) return null
-
-  const { yScale, xScale, innerWidth } = ctx
-
-  // Verificar que las escalas están disponibles y son funciones
-  if (!yScale || !xScale || typeof yScale !== "function" || innerWidth === undefined) {
-    return null
-  }
-
-  const width = innerWidth ?? 0
-
-  return (
-    <g>
-      {ZONAS_AGRONOMICAS.map((zona) => {
-        const y1px = yScale(zona.y2) as number
-        const y2px = yScale(zona.y1) as number
-        const height = Math.abs(y2px - y1px)
-        const yTop = Math.min(y1px, y2px)
-        return (
-          <g key={zona.label}>
-            <rect
-              x={0}
-              y={yTop}
-              width={width}
-              height={height}
-              fill={zona.color}
-              fillOpacity={0.12}
-            />
-            <text
-              x={width - 4}
-              y={yTop + 12}
-              textAnchor="end"
-              fill="#c9c9c9"
-              fontSize={10}
-            >
-              {zona.label}
-            </text>
-          </g>
-        )
-      })}
-    </g>
-  )
-}
+const PERIODS: IrrigationPeriod[] = ["day", "week", "month", "year"]
 
 export function IrrigationChart() {
-  const { data, isLoading } = useIrrigationData()
-  const [viewMode, setViewMode] = React.useState<ViewMode>("stacked")
+  const {
+    points,
+    irrigationPeriods,
+    visibleSeries,
+    yDomain,
+    validationPending,
+    isLoading,
+    period,
+    setPeriod,
+  } = useIrrigationData()
 
-  if (isLoading || !data) {
+  const [viewMode, setViewMode] = useState<ViewMode>("stacked")
+
+  if (isLoading) {
     return (
       <div className="p-6 space-y-4">
         <Skeleton className="h-6 w-32" />
@@ -106,219 +66,235 @@ export function IrrigationChart() {
     )
   }
 
-  // Normalizar el dataset: arrays paralelos → array de ChartPoint con date: Date
-  const chartData: ChartPoint[] = data.dates.map((rawDate, i) => {
-    const s1 = data.sensor1[i]
-    const s2 = data.sensor2[i]
-    const s3 = data.sensor3[i]
-    const validValues = [s1, s2, s3].filter((v): v is number => v !== null)
-    const avg = validValues.length > 0
-      ? parseFloat((validValues.reduce((a, b) => a + b, 0) / validValues.length).toFixed(2))
-      : null
-
-    return {
-      date: new Date(rawDate),
-      sensor20: s1,
-      sensor40: s2,
-      sensor60: s3,
-      average: avg,
-    }
-  })
-
-  // Filtrar nulls por serie para manejo de gaps (D5: filtrado, no segmentación)
-  const s20 = chartData.filter(d => d.sensor20 != null)
-  const s40 = chartData.filter(d => d.sensor40 != null)
-  const s60 = chartData.filter(d => d.sensor60 != null)
-  const sAvg = chartData.filter(d => d.average != null)
-
-  // Formato de eje X: DD mmm
-  const formatTickX = (d: unknown): string => {
-    const date = d instanceof Date ? d : new Date(d as string)
-    return date.toLocaleString("es-CL", { day: "2-digit", month: "short" })
+  // ChartConfig condicional según series con datos
+  const chartConfig: ChartConfig = {
+    ...(visibleSeries.sensor20 && {
+      sensor20: { label: "Sensor 20cm", color: "#0071FF" },
+    }),
+    ...(visibleSeries.sensor40 && {
+      sensor40: { label: "Sensor 40cm", color: "#00E396" },
+    }),
+    ...(visibleSeries.sensor60 && {
+      sensor60: { label: "Sensor 60cm", color: "#FEB019" },
+    }),
+    average: { label: "Promedio", color: "#0071FF" },
   }
 
+  // Formateador del eje X adaptativo según el período activo
+  function tickFormatter(value: number): string {
+    const date = new Date(value)
+    if (period === "day") {
+      return date.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+    }
+    if (period === "year") {
+      return date.toLocaleDateString("es-CL", { month: "short", year: "2-digit" })
+    }
+    return date.toLocaleDateString("es-CL", { day: "2-digit", month: "short" })
+  }
+
+  const labelYAxis = viewMode === "sum" ? "Humedad promedio (%)" : "Humedad (%)"
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Controles de vista */}
-      <div className="flex justify-end gap-2 px-6 pb-2">
-        <Button
-          variant={viewMode === "stacked" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setViewMode("stacked")}
-        >
-          Apilado
-        </Button>
-        <Button
-          variant={viewMode === "sum" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setViewMode("sum")}
-        >
-          Sumatoria
-        </Button>
+    <div
+      className="flex flex-col h-full"
+      style={
+        {
+          "--color-sensor20": "#0071FF",
+          "--color-sensor40": "#00E396",
+          "--color-sensor60": "#FEB019",
+          "--color-average":  "#0071FF",
+        } as CSSProperties
+      }
+    >
+      {/* Controles: selector de período + toggle de vista */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-2 pb-1">
+        {/* Selector de período */}
+        <div className="flex gap-1">
+          {PERIODS.map((p) => (
+            <Button
+              key={p}
+              variant={period === p ? "default" : "outline"}
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setPeriod(p)}
+            >
+              {PERIOD_LABELS[p]}
+            </Button>
+          ))}
+        </div>
+
+        {/* Toggle Apilado / Sumatoria */}
+        <div className="flex gap-1">
+          <Button
+            variant={viewMode === "stacked" ? "default" : "outline"}
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => setViewMode("stacked")}
+          >
+            Apilado
+          </Button>
+          <Button
+            variant={viewMode === "sum" ? "default" : "outline"}
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => setViewMode("sum")}
+          >
+            Sumatoria
+          </Button>
+        </div>
       </div>
 
-      {/* Leyenda de colores (solo en vista Apilado) */}
-      {viewMode === "stacked" && (
-        <div className="flex gap-4 px-6 pb-1">
-          {[
-            { color: accentColors[0], label: "20cm" },
-            { color: accentColors[1], label: "40cm" },
-            { color: accentColors[2], label: "60cm" },
-          ].map(({ color, label }) => (
-            <div key={label} className="flex items-center gap-1.5">
-              <span
-                className="inline-block w-3 h-3 rounded-full"
-                style={{ backgroundColor: color }}
-              />
-              <span className="text-[11px] text-muted-foreground">{label}</span>
-            </div>
-          ))}
+      {/* Aviso de validación */}
+      {validationPending && (
+        <div className="px-4 pb-1">
+          <Alert variant="default" className="py-2">
+            <AlertDescription className="text-xs">
+              Datos en validación
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {points.length === 0 && !isLoading && (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          Sin datos para el período seleccionado
         </div>
       )}
 
       {/* Gráfico */}
-      <div className="flex-1 min-h-0 px-2">
-        <ParentSize>
-          {({ width, height }) => {
-            if (width < 10 || height < 10) return null
-            return (
-              <XYChart
-                width={width}
-                height={height}
-                theme={chartTheme}
-                xScale={{ type: "time" }}
-                yScale={{ type: "linear", domain: [0, 100], zero: true }}
-              >
-                <AnimatedGrid columns={false} numTicks={4} />
-                <AnimatedAxis
-                  orientation="bottom"
-                  tickFormat={formatTickX}
-                  tickLabelProps={{ fill: "#c9c9c9", fontSize: 11 }}
-                />
-                <AnimatedAxis
-                  orientation="left"
-                  numTicks={5}
-                  tickLabelProps={{ fill: "#c9c9c9", fontSize: 11 }}
-                />
+      {points.length > 0 && (
+        <div className="flex-1 min-h-0 px-2 pb-2">
+          <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
+            <LineChart
+              data={points}
+              margin={{ top: 4, right: 12, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
 
-                {viewMode === "sum" && (
-                  <>
-                    {/* Bandas agronómicas renderizadas antes de la serie (z-order fondo)
-                        Método: DataContext para usar la misma yScale que XYChart (D5) */}
-                    <BandasAgronomicas />
-                    <AnimatedLineSeries
-                      dataKey="average"
-                      data={sAvg}
-                      xAccessor={(d) => d.date}
-                      yAccessor={(d) => d.average!}
-                      stroke={accentColors[0]}
-                      strokeWidth={3}
-                    />
-                  </>
-                )}
+              <XAxis
+                dataKey="ts"
+                type="number"
+                domain={["dataMin", "dataMax"]}
+                scale="time"
+                interval="preserveStartEnd"
+                minTickGap={40}
+                tickFormatter={tickFormatter}
+                tick={{ fontSize: 11 }}
+              />
 
-                {viewMode === "stacked" && (
-                  <>
-                    <AnimatedLineSeries
+              <YAxis
+                domain={yDomain}
+                label={{
+                  value: labelYAxis,
+                  angle: -90,
+                  position: "insideLeft",
+                  offset: 10,
+                  style: { fontSize: 10, fill: "var(--muted-foreground)" },
+                }}
+                tick={{ fontSize: 11 }}
+                width={50}
+              />
+
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(value) => tickFormatter(value as number)}
+                    formatter={(value) => [`${Math.round(value as number)}%`]}
+                  />
+                }
+              />
+
+              <ChartLegend content={<ChartLegendContent />} />
+
+              {/* Bandas de períodos de riego (ambas vistas) */}
+              {irrigationPeriods.map((band, idx) => (
+                <ReferenceArea
+                  key={`riego-${idx}`}
+                  x1={band.start}
+                  x2={band.end}
+                  fill="#0071FF"
+                  fillOpacity={0.15}
+                />
+              ))}
+
+              {/* Vista Apilado: una línea por sensor visible */}
+              {viewMode === "stacked" && (
+                <>
+                  {visibleSeries.sensor20 && (
+                    <Line
+                      type="monotone"
                       dataKey="sensor20"
-                      data={s20}
-                      xAccessor={(d) => d.date}
-                      yAccessor={(d) => d.sensor20!}
-                      stroke={accentColors[0]}
-                      strokeWidth={3}
+                      name="sensor20"
+                      stroke="var(--color-sensor20)"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls={false}
                     />
-                    <AnimatedLineSeries
+                  )}
+                  {visibleSeries.sensor40 && (
+                    <Line
+                      type="monotone"
                       dataKey="sensor40"
-                      data={s40}
-                      xAccessor={(d) => d.date}
-                      yAccessor={(d) => d.sensor40!}
-                      stroke={accentColors[1]}
-                      strokeWidth={3}
+                      name="sensor40"
+                      stroke="var(--color-sensor40)"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls={false}
                     />
-                    <AnimatedLineSeries
+                  )}
+                  {visibleSeries.sensor60 && (
+                    <Line
+                      type="monotone"
                       dataKey="sensor60"
-                      data={s60}
-                      xAccessor={(d) => d.date}
-                      yAccessor={(d) => d.sensor60!}
-                      stroke={accentColors[2]}
-                      strokeWidth={3}
+                      name="sensor60"
+                      stroke="var(--color-sensor60)"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls={false}
                     />
-                  </>
-                )}
+                  )}
+                </>
+              )}
 
-                <Tooltip
-                  snapTooltipToDatumX
-                  showVerticalCrosshair
-                  showSeriesGlyphs
-                  renderTooltip={({ tooltipData }) => {
-                    if (!tooltipData?.nearestDatum) return null
-                    const nearestDate = (tooltipData.nearestDatum.datum as ChartPoint).date
-                    const dateStr = nearestDate.toLocaleString("es-CL", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
+              {/* Vista Sumatoria: línea promedio + zonas agronómicas */}
+              {viewMode === "sum" && (
+                <>
+                  {/* Zonas agronómicas como ReferenceArea horizontal */}
+                  {ZONAS_AGRONOMICAS.map((zona) => {
+                    // Solo renderizar si la zona intersecta con el dominio Y visible
+                    if (zona.y1 > yDomain[1] || zona.y2 < yDomain[0]) return null
                     return (
-                      <div
-                        style={{
-                          background: "#2a2a2a",
-                          color: "#c9c9c9",
-                          border: "1px solid #272832",
-                          padding: "8px 12px",
-                          borderRadius: 6,
-                          fontSize: 12,
+                      <ReferenceArea
+                        key={zona.label}
+                        y1={zona.y1}
+                        y2={zona.y2}
+                        fill={zona.color}
+                        fillOpacity={0.12}
+                        label={{
+                          value: zona.label,
+                          position: "insideTopRight",
+                          style: { fontSize: 9, fill: "#c9c9c9" },
                         }}
-                      >
-                        <div style={{ marginBottom: 4, fontWeight: 600 }}>{dateStr}</div>
-                        {Object.entries(tooltipData.datumByKey).map(([key, entry]) => {
-                          const point = entry.datum as ChartPoint
-                          const val = key === "average"
-                            ? point.average
-                            : key === "sensor20"
-                            ? point.sensor20
-                            : key === "sensor40"
-                            ? point.sensor40
-                            : point.sensor60
-                          const colorMap: Record<string, string> = {
-                            sensor20: accentColors[0],
-                            sensor40: accentColors[1],
-                            sensor60: accentColors[2],
-                            average: accentColors[0],
-                          }
-                          const labelMap: Record<string, string> = {
-                            sensor20: "20cm",
-                            sensor40: "40cm",
-                            sensor60: "60cm",
-                            average: "Promedio",
-                          }
-                          return (
-                            <div key={key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <span
-                                style={{
-                                  display: "inline-block",
-                                  width: 8,
-                                  height: 8,
-                                  borderRadius: "50%",
-                                  backgroundColor: colorMap[key] ?? "#c9c9c9",
-                                }}
-                              />
-                              <span>{labelMap[key] ?? key}:</span>
-                              <span style={{ fontWeight: 600 }}>
-                                {val != null ? `${Math.round(val)}%` : "—"}
-                              </span>
-                            </div>
-                          )
-                        })}
-                      </div>
+                      />
                     )
-                  }}
-                />
-              </XYChart>
-            )
-          }}
-        </ParentSize>
-      </div>
+                  })}
+
+                  <Line
+                    type="monotone"
+                    dataKey="average"
+                    name="average"
+                    stroke="var(--color-average)"
+                    strokeWidth={2.5}
+                    dot={false}
+                    connectNulls={false}
+                  />
+                </>
+              )}
+            </LineChart>
+          </ChartContainer>
+        </div>
+      )}
     </div>
   )
 }
