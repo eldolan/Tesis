@@ -91,6 +91,19 @@ export function bucketMsForPeriod(period: IrrigationPeriod): number {
 }
 
 /**
+ * Tope de filas por request a PostgREST.
+ * PostgREST corta en su max-rows (~1000); pedimos las MÁS RECIENTES (orden desc)
+ * hasta este tope y luego revertimos el array a ascendente antes de usarlo.
+ *
+ * 1000 cubre de sobra 24h a 5 min (288) y la mayor parte del legado 1 min (1440 > 1000,
+ * pero el extremo reciente siempre estará presente). Para week/month/year el extremo
+ * reciente también será correcto; solo el extremo antiguo podría truncarse.
+ */
+export function fetchLimitForPeriod(_period: IrrigationPeriod): number {
+  return 1000
+}
+
+/**
  * Devuelve el epoch ms del inicio del rango de fetch según el período.
  *
  * | period | rango desde ahora |
