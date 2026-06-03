@@ -139,19 +139,67 @@ export function SystemStatus() {
     if (!user?.id) return
 
     const supabase = createClient()
-    const channel = supabase
-      .channel("realtime-status")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "sensor_riego_20",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {}
-      )
-      .subscribe((status) => {
+    // Variable mutable para que el cleanup síncrono pueda referenciarla
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    // Tipo inline para las filas de sensor_riego_*
+    type SensorRiegoInsert = {
+      user_id?: string
+      timestamp: string
+      humedad: number | null
+      es_evento_riego: boolean | null
+    }
+
+    // Handler parametrizado: actualiza el sensor correspondiente y el estado de riego
+    function onSensorInsert(
+      tableDef: { table: string; label: string; depth: number },
+      payload: { new: Record<string, unknown> }
+    ) {
+      const row = payload.new as SensorRiegoInsert
+      // Validación adicional en cliente (el filtro de servidor ya filtra, esto es defensa en profundidad)
+      if (row.user_id && row.user_id !== user?.id) return
+      setSensores((prev) => {
+        const ultima = new Date(row.timestamp)
+        const actualizado: SensorDescubierto = {
+          table: tableDef.table,
+          label: tableDef.label,
+          depth: tableDef.depth,
+          status: "online",
+          humedad: row.humedad ?? null,
+          lastReading: formatLecturaCompacta(ultima),
+        }
+        const idx = prev.findIndex((s) => s.table === tableDef.table)
+        const next =
+          idx >= 0
+            ? prev.map((s, i) => (i === idx ? actualizado : s))
+            : [...prev, actualizado]
+        return next.sort((a, b) => a.depth - b.depth)
+      })
+      setIrrigating(row.es_evento_riego === true)
+    }
+
+    async function initRealtime() {
+      // Hidratar JWT antes de suscribir — mismo patrón que use-irrigation-data.ts
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+
+      channel = supabase.channel("realtime-status")
+
+      // Registrar un listener INSERT por cada tabla de sensores
+      for (const tableDef of SENSOR_TABLES) {
+        channel = channel.on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: tableDef.table,
+            filter: `user_id=eq.${authUser.id}`,
+          },
+          (payload) => onSensorInsert(tableDef, payload)
+        )
+      }
+
+      channel.subscribe((status) => {
         if (status === "SUBSCRIBED") {
           setConnectionState("connected")
         } else if (["TIMED_OUT", "CHANNEL_ERROR", "CLOSED"].includes(status)) {
@@ -160,8 +208,14 @@ export function SystemStatus() {
           setConnectionState("connecting")
         }
       })
+    }
 
-    return () => { supabase.removeChannel(channel) }
+    initRealtime()
+
+    // Cleanup síncrono — referencia la variable mutable `channel`
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [user?.id])
 
   const totalDescubiertos = sensores.length
@@ -184,7 +238,7 @@ export function SystemStatus() {
           ) : (
             <WifiOff size={16} className="text-red-400 shrink-0" />
           )}
-          <span className="text-foreground">Conexion Realtime</span>
+          <span className="text-foreground">Conexión Realtime</span>
           <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
             connectionState === "connected"
               ? "bg-green-400/10 text-green-400"

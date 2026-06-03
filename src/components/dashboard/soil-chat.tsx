@@ -19,7 +19,6 @@ interface ChatMessage {
 const SUGERENCIAS = [
   "¿Cuándo debo regar?",
   "¿Cómo está la humedad del suelo?",
-  "¿Qué fertilizante necesito?",
   "¿Hay riesgo de estrés hídrico?",
 ] as const
 
@@ -126,7 +125,7 @@ export function SoilChat() {
               <div className="text-center space-y-1">
                 <p className="text-xl font-semibold text-foreground">{saludo}</p>
                 <p className="text-muted-foreground text-sm text-center">
-                  Soy tu asistente agrícola. Pregúntame sobre riego, suelo o fertilización.
+                  Soy tu asistente agrícola. Pregúntame sobre el estado del riego y el suelo.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 justify-center">
@@ -236,18 +235,18 @@ export function SoilChat() {
         </div>
       </div>
 
-      {/* Área de escritura: Textarea con barra de acciones inferior */}
+      {/* Área de escritura: Textarea y botón en una sola fila */}
       <div className="pt-3 border-t border-border mt-2 shrink-0">
-        <Textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Pregunta sobre el sistema..."
-          className="w-full text-sm resize-none max-h-[96px] overflow-auto"
-          rows={1}
-          disabled={isLoading}
-        />
-        <div className="flex justify-end pt-1">
+        <div className="flex items-end gap-2">
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Pregunta sobre el sistema..."
+            className="flex-1 text-sm resize-none max-h-[96px] overflow-auto"
+            rows={1}
+            disabled={isLoading}
+          />
           <Button
             size="sm"
             onClick={handleSend}
