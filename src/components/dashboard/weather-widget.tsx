@@ -12,6 +12,20 @@ export function WeatherWidget() {
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(true)
 
+  // Persiste la ciudad del usuario en su cuenta (best-effort: no rompe el render si falla).
+  const persistCity = useCallback(async (cityId: number | null) => {
+    try {
+      await fetch("/api/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ciudad_usuario_id: cityId }),
+      })
+    } catch (error) {
+      console.error("No se pudo guardar la preferencia de ciudad:", error)
+    }
+  }, [])
+
+  // Obtiene el clima de una ciudad y actualiza la UI. No persiste la preferencia.
   const fetchWeather = useCallback(async (cityId: number) => {
     setLoading(true)
     try {
@@ -24,7 +38,6 @@ export function WeatherWidget() {
       const data: WeatherData = await res.json()
       setWeather(data)
       setShowForm(false)
-      localStorage.setItem("ciudad_usuario_id", String(cityId))
     } catch (error) {
       console.error(error)
       alert("La ciudad no fue encontrada o hubo un error.")
@@ -33,14 +46,54 @@ export function WeatherWidget() {
     }
   }, [])
 
+  // Selección del usuario: guarda la preferencia por-usuario y muestra el clima.
+  const handleSelect = useCallback(
+    (cityId: number) => {
+      persistCity(cityId)
+      fetchWeather(cityId)
+    },
+    [persistCity, fetchWeather],
+  )
+
+  // Al montar: cargar la ciudad guardada en la cuenta. Si no hay y existe una
+  // elección previa en localStorage (esquema anterior), migrarla una sola vez.
   useEffect(() => {
-    const savedCityId = localStorage.getItem("ciudad_usuario_id")
-    if (savedCityId) {
-      fetchWeather(Number(savedCityId))
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch("/api/preferences")
+        if (!res.ok) return
+        const { ciudad_usuario_id } = (await res.json()) as {
+          ciudad_usuario_id: number | null
+        }
+        if (cancelled) return
+
+        if (ciudad_usuario_id) {
+          fetchWeather(ciudad_usuario_id)
+          return
+        }
+
+        // Backfill one-time desde el esquema previo (localStorage por-navegador).
+        const legacy = localStorage.getItem("ciudad_usuario_id")
+        if (legacy) {
+          const legacyId = Number(legacy)
+          localStorage.removeItem("ciudad_usuario_id")
+          if (Number.isInteger(legacyId) && legacyId > 0) {
+            await persistCity(legacyId)
+            if (!cancelled) fetchWeather(legacyId)
+          }
+        }
+      } catch (error) {
+        console.error("No se pudo cargar la preferencia de ciudad:", error)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
-  }, [fetchWeather])
+  }, [fetchWeather, persistCity])
 
   const handleReset = () => {
+    persistCity(null)
     localStorage.removeItem("ciudad_usuario_id")
     setWeather(null)
     setShowForm(true)
@@ -92,7 +145,7 @@ export function WeatherWidget() {
 
   return (
     <div className="bg-[#0505053f] rounded-xl h-full flex flex-col items-center justify-center p-6">
-      <CityCombobox onSelect={fetchWeather} />
+      <CityCombobox onSelect={handleSelect} />
     </div>
   )
 }

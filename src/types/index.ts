@@ -58,6 +58,13 @@ export interface ChileanCity {
   name: string
 }
 
+export interface UserPreferences {
+  user_id: string
+  /** id de ciudad de OpenWeather; null = sin preferencia. */
+  ciudad_usuario_id: number | null
+  updated_at: string
+}
+
 export interface WeatherData {
   city: string
   temperature: number
@@ -115,5 +122,25 @@ export interface UseIrrigationDataResult {
   isLoading: boolean
   period: IrrigationPeriod
   setPeriod: (p: IrrigationPeriod) => void
+}
+
+// --- Configuración del cultivo ---
+
+export type FaseFenologica =
+  | "establecimiento"
+  | "vegetativo"
+  | "floracion"
+  | "desarrollo_fruto"
+  | "maduracion"
+  | "senescencia"
+
+export type NivelEstres = "ninguno" | "leve" | "moderado" | "severo"
+
+export interface CultivoConfig {
+  user_id: string
+  especie: string
+  fase_fenologica: FaseFenologica
+  nivel_estres: NivelEstres
+  updated_at: string
 }
 

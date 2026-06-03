@@ -40,7 +40,7 @@ export function LoginForm() {
     }
 
     if (mode === "register" && password.length < 6) {
-      setError("La contrasena debe tener al menos 6 caracteres.")
+      setError("La contraseña debe tener al menos 6 caracteres.")
       return
     }
 
@@ -79,17 +79,17 @@ export function LoginForm() {
         })
         if (authError) {
           if (authError.message.includes("already registered")) {
-            setError("Este email ya esta registrado.")
+            setError("Este email ya está registrado.")
           } else {
             setError(authError.message)
           }
         } else {
-          setMessage("Cuenta creada exitosamente. Ya puedes iniciar sesion.")
+          setMessage("Cuenta creada exitosamente. Ya puedes iniciar sesión.")
           setMode("login")
         }
       }
     } catch {
-      setError("Error de conexion. Intenta de nuevo.")
+      setError("Error de conexión. Intenta de nuevo.")
     } finally {
       setLoading(false)
     }
@@ -103,7 +103,7 @@ export function LoginForm() {
             <Image src="/images/logo.svg" alt="Logo" width={64} height={64} className="h-16 w-auto" />
           </div>
           <CardTitle className="text-xl">
-            {mode === "login" ? "Iniciar Sesion" : "Crear Cuenta"}
+            {mode === "login" ? "Iniciar Sesión" : "Crear Cuenta"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -136,7 +136,7 @@ export function LoginForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Contrasena</Label>
+              <Label htmlFor="password">Contraseña</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -198,24 +198,24 @@ export function LoginForm() {
             <p className="text-center text-sm text-muted-foreground">
               {mode === "login" ? (
                 <>
-                  No tienes cuenta?{" "}
+                  ¿No tienes cuenta?{" "}
                   <button
                     type="button"
                     onClick={() => { setMode("register"); setError(null); setMessage(null) }}
                     className="text-primary hover:underline cursor-pointer"
                   >
-                    Registrate
+                    Regístrate
                   </button>
                 </>
               ) : (
                 <>
-                  Ya tienes cuenta?{" "}
+                  ¿Ya tienes cuenta?{" "}
                   <button
                     type="button"
                     onClick={() => { setMode("login"); setError(null); setMessage(null) }}
                     className="text-primary hover:underline cursor-pointer"
                   >
-                    Inicia sesion
+                    Inicia sesión
                   </button>
                 </>
               )}

@@ -4,7 +4,7 @@ import { AuthProvider } from "@/contexts/auth-context"
 
 export const metadata: Metadata = {
   title: "Panel de Control",
-  description: "Panel de control de sensores agricolas",
+  description: "Panel de control de sensores agrícolas",
   icons: {
     icon: "/images/logo.svg",
   },
