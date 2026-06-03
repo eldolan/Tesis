@@ -58,6 +58,13 @@ export interface ChileanCity {
   name: string
 }
 
+export interface UserPreferences {
+  user_id: string
+  /** id de ciudad de OpenWeather; null = sin preferencia. */
+  ciudad_usuario_id: number | null
+  updated_at: string
+}
+
 export interface WeatherData {
   city: string
   temperature: number
