@@ -10,6 +10,7 @@ import type {
 } from "@/types"
 import {
   bucketMsForPeriod,
+  fetchLimitForPeriod,
   rangeStartForPeriod,
   computeIrrigationPeriods,
 } from "@/lib/irrigation-detection"
@@ -27,6 +28,8 @@ interface IrrigationState {
   period: IrrigationPeriod
   isLoading: boolean
   userId: string | null
+  // Contador de re-fetch manual (visibilitychange/focus) — incrementar dispara re-run del Efecto 1
+  refetchCount: number
 }
 
 type IrrigationAction =
@@ -39,6 +42,7 @@ type IrrigationAction =
   | { type: "APPEND_RAW_40"; row: SensorRiego }
   | { type: "APPEND_RAW_60"; row: SensorRiego }
   | { type: "SET_PERIOD"; period: IrrigationPeriod }
+  | { type: "TRIGGER_REFETCH" }
 
 function irrigationReducer(state: IrrigationState, action: IrrigationAction): IrrigationState {
   switch (action.type) {
@@ -70,6 +74,8 @@ function irrigationReducer(state: IrrigationState, action: IrrigationAction): Ir
       return { ...state, rawRows60: [...state.rawRows60, action.row] }
     case "SET_PERIOD":
       return { ...state, period: action.period }
+    case "TRIGGER_REFETCH":
+      return { ...state, refetchCount: state.refetchCount + 1 }
     default:
       return state
   }
@@ -85,11 +91,12 @@ const initialState: IrrigationState = {
   period: "day",
   isLoading: true,
   userId: null,
+  refetchCount: 0,
 }
 
 export function useIrrigationData(): UseIrrigationDataResult {
   const [state, dispatch] = useReducer(irrigationReducer, initialState)
-  const { rows20, rows40, rows60, rawRows20, rawRows40, rawRows60, period, isLoading, userId } = state
+  const { rows20, rows40, rows60, rawRows20, rawRows40, rawRows60, period, isLoading, userId, refetchCount } = state
 
   // Efecto 1: Fetch inicial (se re-ejecuta cuando cambia el período)
   useEffect(() => {
@@ -105,33 +112,39 @@ export function useIrrigationData(): UseIrrigationDataResult {
       const rangeStart = rangeStartForPeriod(period)
       const rangeStartISO = new Date(rangeStart).toISOString()
 
+      // Pedimos las filas MÁS RECIENTES (desc + limit) para evitar el tope de 1000 de PostgREST
+      // que, con orden ascendente, descarta el extremo reciente. Revertimos a ascendente después.
+      const limit = fetchLimitForPeriod(period)
       const [res20, res40, res60] = await Promise.all([
         supabase
           .from("sensor_riego_20")
           .select("*")
           .eq("user_id", user.id)
           .gte("timestamp", rangeStartISO)
-          .order("timestamp", { ascending: true }),
+          .order("timestamp", { ascending: false })
+          .limit(limit),
         supabase
           .from("sensor_riego_40")
           .select("*")
           .eq("user_id", user.id)
           .gte("timestamp", rangeStartISO)
-          .order("timestamp", { ascending: true }),
+          .order("timestamp", { ascending: false })
+          .limit(limit),
         supabase
           .from("sensor_riego_60")
           .select("*")
           .eq("user_id", user.id)
           .gte("timestamp", rangeStartISO)
-          .order("timestamp", { ascending: true }),
+          .order("timestamp", { ascending: false })
+          .limit(limit),
       ])
 
       if (cancelled) return
 
-      // Filas crudas (sin filtrar) — solo para calcular validationPending
-      const raw20 = (res20.data ?? []) as SensorRiego[]
-      const raw40 = (res40.data ?? []) as SensorRiego[]
-      const raw60 = (res60.data ?? []) as SensorRiego[]
+      // Filas crudas (sin filtrar) — revertir a ascendente para el resto del hook
+      const raw20 = ((res20.data ?? []) as SensorRiego[]).reverse()
+      const raw40 = ((res40.data ?? []) as SensorRiego[]).reverse()
+      const raw60 = ((res60.data ?? []) as SensorRiego[]).reverse()
 
       // Filtrar filas inválidas para las series del gráfico (es_valido !== false incluye true y null/undefined)
       const valid20 = raw20.filter(r => r.es_valido !== false)
@@ -151,9 +164,32 @@ export function useIrrigationData(): UseIrrigationDataResult {
     return () => {
       cancelled = true
     }
-  }, [period])
+  }, [period, refetchCount])
 
-  // Efecto 2: Suscripción Realtime (append incremental, sin re-fetch completo)
+  // Efecto 2: Red de seguridad — refetch al volver al foco/pestaña visible
+  // Garantiza datos frescos si la suscripción realtime se cayó o quedó sin token.
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        dispatch({ type: "TRIGGER_REFETCH" })
+      }
+    }
+    function handleFocus() {
+      if (document.visibilityState === "visible") {
+        dispatch({ type: "TRIGGER_REFETCH" })
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    window.addEventListener("focus", handleFocus)
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("focus", handleFocus)
+    }
+  }, [])
+
+  // Efecto 3: Suscripción Realtime (append incremental, sin re-fetch completo)
   useEffect(() => {
     if (!userId) return
 
