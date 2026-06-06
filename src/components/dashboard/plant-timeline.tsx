@@ -162,7 +162,8 @@ export function PlantTimeline() {
         </div>
       ) : (
         <>
-          <div className="flex items-start justify-between gap-1 relative">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <div className="flex items-start justify-between gap-1 relative min-w-[300px]">
             {/* Línea de conexión */}
             <div className="absolute top-5 left-[10%] right-[10%] h-0.5 bg-border z-0" />
             <div
@@ -199,6 +200,7 @@ export function PlantTimeline() {
                 </div>
               )
             })}
+          </div>
           </div>
 
           <p className="mt-3 text-center text-[11px] text-muted-foreground">

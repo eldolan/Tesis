@@ -115,7 +115,7 @@ export function IrrigationChart() {
               key={p}
               variant={period === p ? "default" : "outline"}
               size="sm"
-              className="h-7 px-2 text-xs"
+              className="h-9 px-3 text-xs @xl:h-7 @xl:px-2"
               onClick={() => setPeriod(p)}
             >
               {PERIOD_LABELS[p]}
@@ -128,7 +128,7 @@ export function IrrigationChart() {
           <Button
             variant={viewMode === "stacked" ? "default" : "outline"}
             size="sm"
-            className="h-7 px-2 text-xs"
+            className="h-9 px-3 text-xs @xl:h-7 @xl:px-2"
             onClick={() => setViewMode("stacked")}
           >
             Apilado
@@ -136,7 +136,7 @@ export function IrrigationChart() {
           <Button
             variant={viewMode === "sum" ? "default" : "outline"}
             size="sm"
-            className="h-7 px-2 text-xs"
+            className="h-9 px-3 text-xs @xl:h-7 @xl:px-2"
             onClick={() => setViewMode("sum")}
           >
             Sumatoria
