@@ -36,7 +36,7 @@ export function NotificationsPopover() {
           </Badge>
         )}
       </div>
-      <PopoverContent align="end" className="w-80 p-0">
+      <PopoverContent align="end" className="w-[min(20rem,calc(100vw-1.5rem))] p-0">
         <div className="px-3 py-2.5 border-b border-border flex items-center justify-between gap-2">
           <p className="font-semibold text-sm">Notificaciones</p>
           {unreadCount > 0 && (
