@@ -5,9 +5,10 @@ import { cookies } from 'next/headers'
 export async function createClient() {
   const cookieStore = await cookies()
 
+  // .trim() defensivo: ver nota en client.ts (salto de línea final en la env var).
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim(),
     {
       cookies: {
         getAll() {
@@ -27,8 +28,8 @@ export async function createClient() {
   )
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.trim()
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!.trim()
 
 export const supabaseAdmin = createSupabaseClient(supabaseUrl, supabaseServiceKey, {
   auth: {
