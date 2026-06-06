@@ -7,6 +7,11 @@
 @font-face {
   font-family: 'Freesentation';
   src: url('/fonts/FreesentationVF.ttf') format('truetype');
+  /* Fuente variable: declarar el rango del eje wght (100–800) para que
+     el navegador mapee los pesos solicitados (400/600) en vez de caer a
+     la instancia por defecto (Thin 100), que renderiza glifos delgados
+     como ¿ / ¡ casi invisibles a tamaños pequeños. */
+  font-weight: 100 800;
   font-display: swap;
 }
 
