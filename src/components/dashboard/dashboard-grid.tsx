@@ -37,8 +37,8 @@ export function DashboardGrid() {
     <div className="min-h-dvh flex flex-col bg-background">
       {/* Header */}
       <FadeContent delay={0} duration={400} blur={false} initialY={-8}>
-        <header className="flex items-center justify-between px-5 py-3 border-b border-border bg-card/60 backdrop-blur-sm sticky top-0 z-10">
-          <div className="flex items-center gap-3">
+        <header className="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-border bg-card/60 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Image
               src="/images/logo.svg"
               alt="Logo"
@@ -94,7 +94,7 @@ export function DashboardGrid() {
             </BentoCard>
 
             {/* Irrigation Chart — 4 / 6 cols */}
-            <BentoCard delay={320} className="@xl:col-span-2 @5xl:col-span-4 h-[480px]">
+            <BentoCard delay={320} className="@xl:col-span-2 @5xl:col-span-4 h-[70vh] min-h-[380px] @xl:h-[480px]">
               <div className="flex flex-col h-full">
                 <div className="px-6 pt-5 pb-1">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -109,7 +109,7 @@ export function DashboardGrid() {
             </BentoCard>
 
             {/* Soil Chat — 2 / 6 cols */}
-            <BentoCard delay={400} className="@xl:col-span-2 @5xl:col-span-2 h-[480px]">
+            <BentoCard delay={400} className="@xl:col-span-2 @5xl:col-span-2 h-[65vh] min-h-[420px] @xl:h-[480px]">
               <div className="flex flex-col h-full">
                 <div className="px-6 pt-5 pb-1">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">

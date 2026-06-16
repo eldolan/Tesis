@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+# Artefactos Windows/WSL
+*.Zone.Identifier
 
 # debug
 npm-debug.log*
