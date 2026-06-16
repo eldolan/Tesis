@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
-import { FASES, NIVELES_ESTRES, FASE_DEFAULT, ESTRES_DEFAULT } from "@/lib/cultivo"
-import type { FaseFenologica, NivelEstres } from "@/types"
+import { NIVELES_ESTRES, FASE_DEFAULT, ESTRES_DEFAULT, fasesValidasParaEspecie } from "@/lib/cultivo"
+import type { NivelEstres } from "@/types"
 
-const FASES_VALIDAS = new Set(FASES.map((f) => f.id))
 const ESTRES_VALIDOS = new Set(NIVELES_ESTRES.map((n) => n.id))
 
 // GET /api/cultivo — configuración del cultivo del usuario autenticado.
@@ -55,14 +54,18 @@ export async function POST(request: Request) {
   }
 
   const especie = typeof body.especie === "string" ? body.especie.trim().slice(0, 120) : ""
-  const fase = body.fase_fenologica as FaseFenologica
+  const fase = typeof body.fase_fenologica === "string" ? body.fase_fenologica : ""
   const estres = body.nivel_estres as NivelEstres
 
   if (!especie) {
     return Response.json({ error: "La especie es requerida." }, { status: 400 })
   }
-  if (!FASES_VALIDAS.has(fase)) {
-    return Response.json({ error: "Fase fenológica inválida." }, { status: 400 })
+  // Validar la fase contra el catálogo de la especie, no contra un set global fijo.
+  if (!fasesValidasParaEspecie(especie).has(fase)) {
+    return Response.json(
+      { error: `Fase fenológica inválida para la especie "${especie}".` },
+      { status: 400 },
+    )
   }
   if (!ESTRES_VALIDOS.has(estres)) {
     return Response.json({ error: "Nivel de estrés inválido." }, { status: 400 })
