@@ -7,7 +7,7 @@ domain: "feature"
 delta_type: null
 supersedes: null
 superseded_by: null
-status: review
+status: completed
 assigned_agent: "sdd-apply"
 priority: high
 depends_on: []
@@ -30,6 +30,7 @@ related:
   - "[[cultivo-fase-cableada-riego]]"
   - "[[cultivo-plant-timeline-ui]]"
 affects:
+  - "[[rag-fases-monstera-cobertura]]"
   - "[[riego-rdc-modulacion-por-fase]]"
 adrs:
   - "[[0001-fase-fenologica-string-validada-en-runtime]]"
@@ -37,7 +38,7 @@ scope:
   - "src/lib/cultivo.ts"
   - "src/types/index.ts"
   - "src/app/api/cultivo/route.ts"
-verified_at: null
+verified_at: "2026-06-15"
 
 created: "2026-06-15"
 updated: "2026-06-15"

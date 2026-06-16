@@ -7,7 +7,7 @@ domain: "feature"
 delta_type: null
 supersedes: null
 superseded_by: null
-status: review
+status: completed
 assigned_agent: "sdd-apply"
 priority: critical
 depends_on:
@@ -30,6 +30,7 @@ related:
   - "[[cultivo-fases-dinamicas-por-especie]]"
   - "[[riego-rdc-modulacion-por-fase]]"
 affects:
+  - "[[cultivo-plant-timeline-ui]]"
   - "[[riego-rdc-modulacion-por-fase]]"
 adrs:
   - "[[0003-default-sobrescribible-fase-estres]]"
@@ -37,7 +38,7 @@ scope:
   - "src/lib/cultivo.ts"
   - "src/components/dashboard/plant-timeline.tsx"
   - "src/app/api/cultivo/route.ts"
-verified_at: null
+verified_at: "2026-06-15"
 
 created: "2026-06-15"
 updated: "2026-06-15"

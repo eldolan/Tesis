@@ -7,7 +7,7 @@ domain: "feature"
 delta_type: null
 supersedes: null
 superseded_by: null
-status: review
+status: completed
 assigned_agent: null
 priority: critical
 depends_on:

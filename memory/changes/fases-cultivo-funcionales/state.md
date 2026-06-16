@@ -2,10 +2,10 @@
 type: change-state
 change_name: "fases-cultivo-funcionales"
 domain: "feature"
-status: active
+status: completed
 fast_path: "full"
-current_phase: sdd-verify
-phases_completed: [sdd-init, sdd-explore, sdd-propose, sdd-spec, sdd-design, sdd-tasks, sdd-apply]
+current_phase: ""
+phases_completed: [sdd-init, sdd-explore, sdd-propose, sdd-spec, sdd-design, sdd-tasks, sdd-apply, sdd-verify, sdd-archive]
 spec_refs:
   - "[[cultivo-fases-dinamicas-por-especie]]"
   - "[[cultivo-fase-cableada-riego]]"
@@ -16,10 +16,13 @@ worktree: "/home/dylan/herramientas-ia/projects/tesis/.sdd/worktrees/fases-culti
 feature_branch: "feature/fases-cultivo-funcionales"
 integration_target: "develop"
 mr: ""
+mr_url: ""
 mr_status: pending
 mr_error: ""
 created: "2026-06-15"
 updated: "2026-06-15"
+completed: "2026-06-15"
+verify_completed: "2026-06-15"
 apply_completed: "2026-06-15"
 tasks_completed: "2026-06-15"
 design_completed: "2026-06-15"
@@ -28,7 +31,7 @@ explore_completed: "2026-06-15"
 propose_completed: "2026-06-15"
 tags: [change]
 require_judgment: false
-skip_judgment: false
+skip_judgment: true
 ---
 
 ## Intent

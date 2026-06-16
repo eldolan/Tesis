@@ -7,7 +7,7 @@ domain: "feature"
 delta_type: null
 supersedes: null
 superseded_by: null
-status: review
+status: completed
 assigned_agent: "sdd-apply"
 priority: medium
 depends_on:
@@ -33,7 +33,7 @@ adrs:
   - "[[0001-fase-fenologica-string-validada-en-runtime]]"
 scope:
   - "src/components/dashboard/plant-timeline.tsx"
-verified_at: null
+verified_at: "2026-06-15"
 
 created: "2026-06-15"
 updated: "2026-06-15"
