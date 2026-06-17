@@ -1,6 +1,6 @@
 ---
 type: project-profile
-updated: "2026-06-15"
+updated: "2026-06-17"
 ---
 
 # tesis-nextjs
