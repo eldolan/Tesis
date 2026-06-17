@@ -94,6 +94,11 @@ export function IrrigationChart() {
 
   const labelYAxis = viewMode === "sum" ? "Humedad promedio (%)" : "Humedad (%)"
 
+  // Dominio Y efectivo: en modo "sum" se expande para cubrir siempre las bandas agronómicas (40-100)
+  const effectiveDomain: [number, number] = viewMode === "sum"
+    ? [Math.min(yDomain[0], 40), Math.max(yDomain[1], 100)]
+    : yDomain
+
   return (
     <div
       className="flex flex-col h-full"
@@ -184,7 +189,7 @@ export function IrrigationChart() {
               />
 
               <YAxis
-                domain={yDomain}
+                domain={effectiveDomain}
                 label={{
                   value: labelYAxis,
                   angle: -90,
@@ -266,7 +271,7 @@ export function IrrigationChart() {
                   {/* Zonas agronómicas como ReferenceArea horizontal */}
                   {ZONAS_AGRONOMICAS.map((zona) => {
                     // Solo renderizar si la zona intersecta con el dominio Y visible
-                    if (zona.y1 > yDomain[1] || zona.y2 < yDomain[0]) return null
+                    if (zona.y1 > effectiveDomain[1] || zona.y2 < effectiveDomain[0]) return null
                     return (
                       <ReferenceArea
                         key={zona.label}
