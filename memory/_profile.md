@@ -1,6 +1,6 @@
 ---
 type: project-profile
-updated: "2026-06-15"
+updated: "2026-06-16"
 ---
 
 # tesis-nextjs
@@ -10,7 +10,7 @@ updated: "2026-06-15"
 - **Lenguaje**: TypeScript 5.x (strict mode, target ES2017, moduleResolution: bundler)
 - **Framework**: Next.js 16.2.2 (App Router, React 19.2.4)
 - **Runtime UI**: React 19 con Server Components y Client Components (`"use client"`)
-- **Gestor de paquetes**: npm (package-lock.json presente; pnpm no confirmado — usar npm)
+- **Gestor de paquetes**: pnpm 10.33.0 (package.json especifica `packageManager: pnpm@10.33.0`)
 - **Estilos**: Tailwind CSS 4.x + tw-animate-css + tailwind-merge + clsx
 - **Componentes UI**: shadcn (v4.1.2) sobre @base-ui/react + lucide-react + framer-motion + @react-spring/web
 - **Gráficos**: recharts 3.x
@@ -29,6 +29,7 @@ updated: "2026-06-15"
 - **Supabase migrations**: `supabase/migrations/` (una migración RAG: knowledge_base con pgvector + match_documents)
 - **RAG vector store**: tabla `knowledge_base` (corpus compartido, acceso service_role via n8n)
 - **Automatización/Riego**: n8n externo — workflow "Agente Agrícola" (id: lDKOPfa4vgBSyYwy), NO en este repo
+- **Chat y guardrails**: Los guardrails del agente de chat se configuran en n8n (nodo de guardrail con lógica de validación)
 - **Documentación tesis**: `documentacion/` (incluye PDF de Callejas sobre metodología RDC)
 - **Embeddings**: directorio `embeddings/` (corpus pre-procesado para RAG)
 
@@ -47,3 +48,4 @@ updated: "2026-06-15"
 - El RAG del agente agrícola está en la tabla `knowledge_base` de Supabase, consultada via función SQL `match_documents`.
 - user_id de prueba hardcodeado en n8n: `7d2cbed5-...` (ver workflows).
 - Fases fenológicas son dinámicas por especie: `fasesParaEspecie(especie)` en `cultivo.ts` retorna el catálogo específico de la especie (ej: 3 fases para Monstera) con fallback a `FASES_GENERICAS` (6 fases) si no hay catálogo propio.
+- El guardrail en n8n (nodo `c5dba1b4`, workflow `lDKOPfa4vgBSyYwy`) inyecta el último turno del asistente + texto del usuario como inputText del textClassifier, y tiene wording ampliado para reconocer afirmaciones cortas en contexto de riego ("sí", "dale", "ok", etc.) con fallback seguro cuando no hay historial.
