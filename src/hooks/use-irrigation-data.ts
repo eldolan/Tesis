@@ -25,6 +25,8 @@ interface IrrigationState {
   rawRows20: SensorRiego[]
   rawRows40: SensorRiego[]
   rawRows60: SensorRiego[]
+  // Puntos agregados por día desde la RPC (solo para period === "year")
+  aggregatedPoints: IrrigationSeriesPoint[] | null
   period: IrrigationPeriod
   isLoading: boolean
   userId: string | null
@@ -35,6 +37,7 @@ interface IrrigationState {
 type IrrigationAction =
   | { type: "FETCH_START" }
   | { type: "FETCH_SUCCESS"; rows20: SensorRiego[]; rows40: SensorRiego[]; rows60: SensorRiego[]; rawRows20: SensorRiego[]; rawRows40: SensorRiego[]; rawRows60: SensorRiego[]; userId: string }
+  | { type: "FETCH_AGG_SUCCESS"; aggregatedPoints: IrrigationSeriesPoint[]; userId: string }
   | { type: "APPEND_20"; row: SensorRiego }
   | { type: "APPEND_40"; row: SensorRiego }
   | { type: "APPEND_60"; row: SensorRiego }
@@ -47,7 +50,8 @@ type IrrigationAction =
 function irrigationReducer(state: IrrigationState, action: IrrigationAction): IrrigationState {
   switch (action.type) {
     case "FETCH_START":
-      return { ...state, rows20: [], rows40: [], rows60: [], rawRows20: [], rawRows40: [], rawRows60: [], isLoading: true }
+      // Resetear aggregatedPoints al iniciar fetch para evitar fuga de estado entre períodos
+      return { ...state, rows20: [], rows40: [], rows60: [], rawRows20: [], rawRows40: [], rawRows60: [], aggregatedPoints: null, isLoading: true }
     case "FETCH_SUCCESS":
       return {
         ...state,
@@ -57,6 +61,13 @@ function irrigationReducer(state: IrrigationState, action: IrrigationAction): Ir
         rawRows20: action.rawRows20,
         rawRows40: action.rawRows40,
         rawRows60: action.rawRows60,
+        userId: action.userId,
+        isLoading: false,
+      }
+    case "FETCH_AGG_SUCCESS":
+      return {
+        ...state,
+        aggregatedPoints: action.aggregatedPoints,
         userId: action.userId,
         isLoading: false,
       }
@@ -88,6 +99,7 @@ const initialState: IrrigationState = {
   rawRows20: [],
   rawRows40: [],
   rawRows60: [],
+  aggregatedPoints: null,
   period: "day",
   isLoading: true,
   userId: null,
@@ -96,7 +108,7 @@ const initialState: IrrigationState = {
 
 export function useIrrigationData(): UseIrrigationDataResult {
   const [state, dispatch] = useReducer(irrigationReducer, initialState)
-  const { rows20, rows40, rows60, rawRows20, rawRows40, rawRows60, period, isLoading, userId, refetchCount } = state
+  const { rows20, rows40, rows60, rawRows20, rawRows40, rawRows60, aggregatedPoints, period, isLoading, userId, refetchCount } = state
 
   // Efecto 1: Fetch inicial (se re-ejecuta cuando cambia el período)
   useEffect(() => {
@@ -112,7 +124,44 @@ export function useIrrigationData(): UseIrrigationDataResult {
       const rangeStart = rangeStartForPeriod(period)
       const rangeStartISO = new Date(rangeStart).toISOString()
 
-      // Pedimos las filas MÁS RECIENTES (desc + limit) para evitar el tope de 1000 de PostgREST
+      // Rama year: usa RPC de agregación diaria (server-side downsample, ~365 puntos)
+      if (period === "year") {
+        const { data, error } = await supabase.rpc("get_irrigation_daily", {
+          p_range_start: rangeStartISO,
+        })
+
+        if (cancelled) return
+        if (error || !data) return
+
+        // Mapear filas RPC a IrrigationSeriesPoint (idéntico al cálculo del useMemo no-year)
+        const mapped: IrrigationSeriesPoint[] = (data as Array<{
+          bucket: string
+          sensor20: number | null
+          sensor40: number | null
+          sensor60: number | null
+        }>).map((row) => {
+          const vals = [row.sensor20, row.sensor40, row.sensor60].filter(
+            (v): v is number => v !== null
+          )
+          const average =
+            vals.length > 0
+              ? parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2))
+              : null
+          return {
+            ts: new Date(row.bucket).getTime(),
+            sensor20: row.sensor20,
+            sensor40: row.sensor40,
+            sensor60: row.sensor60,
+            average,
+          }
+        })
+
+        dispatch({ type: "FETCH_AGG_SUCCESS", aggregatedPoints: mapped, userId: user.id })
+        return
+      }
+
+      // Rama no-year (day/week/month): fetch por filas con límite derivado del rango.
+      // Pedimos las filas MÁS RECIENTES (desc + limit) para evitar el tope de PostgREST
       // que, con orden ascendente, descarta el extremo reciente. Revertimos a ascendente después.
       const limit = fetchLimitForPeriod(period)
       const [res20, res40, res60] = await Promise.all([
@@ -192,6 +241,10 @@ export function useIrrigationData(): UseIrrigationDataResult {
   // Efecto 3: Suscripción Realtime (append incremental, sin re-fetch completo)
   useEffect(() => {
     if (!userId) return
+    // Year va por RPC de agregación diaria; un INSERT individual no pertenece al shape
+    // de buckets diarios y corrompería el useMemo de points. El refresco queda cubierto
+    // por el Efecto 2 (visibilitychange/focus → TRIGGER_REFETCH).
+    if (period === "year") return
 
     const supabase = createClient()
     const rangeStart = rangeStartForPeriod(period)
@@ -257,7 +310,12 @@ export function useIrrigationData(): UseIrrigationDataResult {
   }, [period, userId])
 
   // useMemo: downsample por bucket → IrrigationSeriesPoint[]
+  // Para year: devuelve directamente los puntos agregados de la RPC (sin downsample en cliente).
+  // Para day/week/month: calcula el downsample sobre las filas crudas como antes.
   const points = useMemo<IrrigationSeriesPoint[]>(() => {
+    // Rama year: retorno temprano con los puntos ya agregados server-side
+    if (aggregatedPoints) return aggregatedPoints
+
     const bucketMs = bucketMsForPeriod(period)
 
     // Acumular sumas y conteos por bucket por sensor
@@ -312,7 +370,7 @@ export function useIrrigationData(): UseIrrigationDataResult {
     }
 
     return result.sort((a, b) => a.ts - b.ts)
-  }, [rows20, rows40, rows60, period])
+  }, [rows20, rows40, rows60, period, aggregatedPoints])
 
   // useMemo: bandas de períodos de riego
   const irrigationPeriods = useMemo(

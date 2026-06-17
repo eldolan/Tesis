@@ -91,16 +91,41 @@ export function bucketMsForPeriod(period: IrrigationPeriod): number {
 }
 
 /**
- * Tope de filas por request a PostgREST.
- * PostgREST corta en su max-rows (~1000); pedimos las MÁS RECIENTES (orden desc)
- * hasta este tope y luego revertimos el array a ascendente antes de usarlo.
- *
- * 1000 cubre de sobra 24h a 5 min (288) y la mayor parte del legado 1 min (1440 > 1000,
- * pero el extremo reciente siempre estará presente). Para week/month/year el extremo
- * reciente también será correcto; solo el extremo antiguo podría truncarse.
+ * Densidad de inserción asumida: ~5 min/fila → 288 filas/día.
+ * Aplica a las vistas day, week y month (year usa RPC de agregación diaria).
  */
-export function fetchLimitForPeriod(_period: IrrigationPeriod): number {
-  return 1000
+const ROWS_PER_DAY = 288
+
+/**
+ * Margen de seguridad para absorber ráfagas de datos (p.ej. legado 1 min,
+ * reinyecciones) y crecimiento futuro de densidad.
+ */
+const FETCH_MARGIN = 1.5
+
+/**
+ * Calcula el tope de filas por request a PostgREST derivándolo del rango temporal
+ * del período, no con un valor fijo. Así si `rangeStartForPeriod` cambia, el límite
+ * se ajusta automáticamente.
+ *
+ * Fórmula: Math.ceil(días × ROWS_PER_DAY × FETCH_MARGIN)
+ *
+ * | period | días | límite   |
+ * |--------|------|----------|
+ * | day    |    1 |      432 |
+ * | week   |    7 |    3 024 |
+ * | month  |   30 |   12 960 |
+ * | year   |  365 | (no usado — el hook llama a la RPC get_irrigation_daily) |
+ *
+ * NOTA: Para year el hook ramifica a la RPC antes de consultar por filas, por lo
+ * que este valor no se usa en producción; se devuelve de todas formas para coherencia.
+ */
+export function fetchLimitForPeriod(period: IrrigationPeriod): number {
+  const days =
+    period === "day"   ? 1   :
+    period === "week"  ? 7   :
+    period === "month" ? 30  :
+    /* year */           365
+  return Math.ceil(days * ROWS_PER_DAY * FETCH_MARGIN)
 }
 
 /**
