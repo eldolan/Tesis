@@ -126,13 +126,9 @@ export interface UseIrrigationDataResult {
 
 // --- Configuración del cultivo ---
 
-export type FaseFenologica =
-  | "establecimiento"
-  | "vegetativo"
-  | "floracion"
-  | "desarrollo_fruto"
-  | "maduracion"
-  | "senescencia"
+// Validada en runtime contra FASES_POR_ESPECIE[especie] (ADR-0001).
+// No cerrado por tipo — la especie es dato runtime.
+export type FaseFenologica = string
 
 export type NivelEstres = "ninguno" | "leve" | "moderado" | "severo"
 

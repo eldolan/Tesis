@@ -12,17 +12,27 @@ import {
   Settings2,
   Loader2,
 } from "lucide-react"
-import { FASES, NIVELES_ESTRES } from "@/lib/cultivo"
-import type { CultivoConfig, FaseFenologica, NivelEstres } from "@/types"
+import { NIVELES_ESTRES, fasesParaEspecie, fasesValidasParaEspecie, estresRecomendadoDeFase, nivelEstresEfectivo } from "@/lib/cultivo"
+import type { CultivoConfig, NivelEstres } from "@/types"
 
-// Icono por fase (mismo orden cronológico que FASES).
-const ICONOS: Record<FaseFenologica, React.ReactNode> = {
+// Icono por fase. Cubre las 6 genéricas + 3 de Monstera + fallback.
+const ICONOS: Record<string, React.ReactNode> = {
+  // genéricas (sin cambios)
   establecimiento: <Sprout size={22} />,
   vegetativo: <Leaf size={22} />,
   floracion: <Flower2 size={22} />,
   desarrollo_fruto: <Apple size={22} />,
   maduracion: <TreeDeciduous size={22} />,
   senescencia: <Moon size={22} />,
+  // monstera
+  crecimiento_activo: <Sprout size={22} />,
+  latencia_invernal: <Moon size={22} />,
+  recuperacion: <Leaf size={22} />,
+}
+const ICONO_FALLBACK = <Sprout size={22} />
+
+function iconoDeFase(faseId: string): React.ReactNode {
+  return ICONOS[faseId] ?? ICONO_FALLBACK
 }
 
 export function PlantTimeline() {
@@ -85,7 +95,8 @@ export function PlantTimeline() {
     )
   }
 
-  const idxActiva = FASES.findIndex((f) => f.id === config.fase_fenologica)
+  const fases = fasesParaEspecie(config.especie)
+  const idxActiva = fases.findIndex((f) => f.id === config.fase_fenologica)
 
   return (
     <div className="flex flex-col h-full justify-center px-4 py-3">
@@ -109,7 +120,21 @@ export function PlantTimeline() {
             <input
               type="text"
               value={config.especie}
-              onChange={(e) => setConfig({ ...config, especie: e.target.value })}
+              onChange={(e) => {
+                const nuevaEspecie = e.target.value
+                // Reset de fase si la actual no pertenece al catálogo de la nueva especie.
+                if (!fasesValidasParaEspecie(nuevaEspecie).has(config.fase_fenologica)) {
+                  const primeraFase = fasesParaEspecie(nuevaEspecie)[0]
+                  setConfig({
+                    ...config,
+                    especie: nuevaEspecie,
+                    fase_fenologica: primeraFase.id,
+                    nivel_estres: estresRecomendadoDeFase(nuevaEspecie, primeraFase.id),
+                  })
+                } else {
+                  setConfig({ ...config, especie: nuevaEspecie })
+                }
+              }}
               placeholder="Ej: tomate, palto, monstera…"
               className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             />
@@ -119,12 +144,17 @@ export function PlantTimeline() {
             <span className="text-muted-foreground">Fase fenológica</span>
             <select
               value={config.fase_fenologica}
-              onChange={(e) =>
-                setConfig({ ...config, fase_fenologica: e.target.value as FaseFenologica })
-              }
+              onChange={(e) => {
+                const nuevaFase = e.target.value
+                setConfig({
+                  ...config,
+                  fase_fenologica: nuevaFase,
+                  nivel_estres: estresRecomendadoDeFase(config.especie, nuevaFase),
+                })
+              }}
               className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             >
-              {FASES.map((f) => (
+              {fasesParaEspecie(config.especie).map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.label}
                 </option>
@@ -163,15 +193,16 @@ export function PlantTimeline() {
       ) : (
         <>
           <div className="overflow-x-auto -mx-1 px-1">
-          <div className="flex items-start justify-between gap-1 relative min-w-[300px]">
+          {/* pt-1.5: absorbe los 4px del ring-offset del círculo activo (ADR-0001 / fix recorte) */}
+          <div className="flex items-start justify-between gap-1 relative min-w-[300px] pt-1.5">
             {/* Línea de conexión */}
             <div className="absolute top-5 left-[10%] right-[10%] h-0.5 bg-border z-0" />
             <div
               className="absolute top-5 left-[10%] h-0.5 bg-primary z-0 transition-all"
-              style={{ width: `${(Math.max(idxActiva, 0) / (FASES.length - 1)) * 80}%` }}
+              style={{ width: `${(Math.max(idxActiva, 0) / (fases.length - 1)) * 80}%` }}
             />
 
-            {FASES.map((fase, i) => {
+            {fases.map((fase, i) => {
               const completed = i < idxActiva
               const active = i === idxActiva
               return (
@@ -185,7 +216,7 @@ export function PlantTimeline() {
                           : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {completed ? <CheckCircle size={20} /> : ICONOS[fase.id]}
+                    {completed ? <CheckCircle size={20} /> : iconoDeFase(fase.id)}
                   </div>
                   <span
                     className={`text-[11px] font-medium text-center leading-tight ${
@@ -205,9 +236,9 @@ export function PlantTimeline() {
 
           <p className="mt-3 text-center text-[11px] text-muted-foreground">
             <span className="capitalize text-foreground">{config.especie}</span>
-            {" · estrés "}
+            {" · estrés efectivo "}
             <span className="text-foreground">
-              {NIVELES_ESTRES.find((n) => n.id === config.nivel_estres)?.label.toLowerCase()}
+              {NIVELES_ESTRES.find((n) => n.id === nivelEstresEfectivo(config.especie, config.fase_fenologica, config.nivel_estres))?.label.toLowerCase()}
             </span>
           </p>
         </>
