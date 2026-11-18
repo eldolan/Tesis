@@ -76,3 +76,4 @@ sensor_client.py
 /documentacion/
 /embeddings/
 /n8n-workflows/
+.simba/
