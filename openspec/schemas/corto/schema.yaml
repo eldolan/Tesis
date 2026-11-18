@@ -1,0 +1,36 @@
+name: corto
+version: 1
+description: Camino corto de simba - tareas y un delta de spec opcional
+artifacts:
+  - id: specs
+    generates: "specs/**/*.md"
+    description: Delta de spec, solo si el cambio vuelve falso un requirement especificado
+    template: spec.md
+    requires: []
+  - id: tasks
+    generates: tasks.md
+    description: Checklist de implementación, escrita por el motor desde el pedido
+    template: tasks.md
+    requires: []
+
+apply:
+  requires:
+    - tasks
+  tracks: tasks.md
+  instruction: |
+    Implementa las tareas pendientes de tasks.md con su test, y márcalas con `- [x]` a medida que
+    las cierras.
+
+    Escribe un delta de spec solo si el cambio vuelve falso un requirement de `openspec/specs/`
+    (por ejemplo, el que fija un límite de 30 que el pedido sube a 50): la spec tiene que seguir
+    diciendo lo que hace el código. Un comportamiento que ningún requirement describe no lleva
+    delta, aunque sea nuevo o su capability ya exista: especificarlo es trabajo del camino full.
+
+    El delta se escribe con `simba_delta_fijar`, una llamada por requirement y con el nombre exacto
+    de la capability; nunca con tus herramientas de edición. Usa `modificar` para el requirement
+    que cambia: parte del que da `simba_spec` y lleva todos sus escenarios con su nombre exacto; su
+    texto, en SHALL o MUST, no pasa de 500 caracteres. Usa `retirar` para el que se retira, con
+    `motivo` y `migracion`. Cada llamada valida el delta con OpenSpec; si lo rechaza, no escribe
+    nada y responde con los problemas.
+
+    No toques `.openspec.yaml`: el motor declara `skip_specs` según haya o no deltas.

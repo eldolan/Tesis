@@ -1,0 +1,153 @@
+name: full
+version: 1
+description: Camino full de simba - propuesta, specs, diseño y tareas
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Propuesta del cambio, con su alcance y sus capabilities
+    template: proposal.md
+    instruction: |
+      Escribe la propuesta: por qué se hace el cambio y hasta dónde llega. Lee el código antes de
+      escribirla.
+
+      Secciones, las de la plantilla:
+      - **Por qué**: uno o dos párrafos con el problema o la oportunidad y por qué ahora.
+      - **Qué cambia**: lista de cambios, concreta. Marca con **BREAKING** los que rompen
+        compatibilidad.
+      - **Criterios de aceptación**: los del pedido, todos y enteros, con su numeración y sus
+        valores literales. Si el pedido no trae criterios, dilo.
+      - **Preguntas**: cada decisión que el pedido no toma y que la persona decide al aprobar,
+        con tu recomendación. Si no hay ninguna, dilo.
+      - **Capabilities**: qué specs se crean o se modifican. Es el contrato con la fase que sigue:
+        cada capability de esta lista tendrá su delta en `specs/<capability>/spec.md`.
+        - **New Capabilities**: las que el cambio introduce. Nombra cada una por un comportamiento
+          durable del sistema (`user-auth`), no por el trabajo de este cambio (`add-login-endpoint`).
+          Agrupa los requirements relacionados en una sola; evita las que lo abarcan todo. Usa
+          kebab-case, y una ruta con `/` si el proyecto ya agrupa así.
+        - **Modified Capabilities**: las que ya existen y cuyos REQUIREMENTS cambian. Usa la ruta
+          exacta de `openspec/specs/<capability>/spec.md`, que lees con `simba_spec`.
+        - Cada capability va en su propia viñeta, con su nombre entre comillas invertidas:
+          `- `ruta`: qué cubre`. Si el cambio no altera ningún comportamiento especificado (un
+          refactor, herramientas, documentación), deja las dos listas sin viñetas. No inventes un
+          requirement para llenarlas.
+      - **Impacto**: código, APIs, dependencias y sistemas afectados.
+
+      No toques `.openspec.yaml`: el motor declara `skip_specs` según haya o no deltas.
+
+      Sé conciso (una o dos páginas) y céntrate en el porqué: el cómo va en el diseño.
+    requires: []
+
+  - id: specs
+    generates: "specs/**/*.md"
+    description: Deltas de spec del cambio, uno por capability
+    template: spec.md
+    instruction: |
+      Escribe los deltas de spec: QUÉ debe hacer el sistema. Una spec es un contrato de
+      comportamiento, no un plan de implementación.
+
+      Buen contenido: comportamiento observable, entradas, salidas y errores, restricciones
+      externas (seguridad, privacidad, compatibilidad) y escenarios que se puedan probar. Evita
+      nombres internos de clases o funciones, librerías y pasos de implementación. Prueba rápida:
+      si la implementación puede cambiar sin cambiar el comportamiento visible, no va en la spec.
+
+      Escribe el delta de cada capability de la propuesta con `simba_delta_fijar`, una llamada por
+      requirement y con el nombre exacto de la capability; nunca con tus herramientas de edición.
+      Cada llamada deja la entrada como la pides, valida el delta con OpenSpec y responde con el
+      delta entero; si OpenSpec lo rechaza, no escribe nada y responde con los problemas.
+      `simba_delta_quitar` saca una entrada, y `simba_delta` muestra el delta.
+
+      Operaciones (`operacion`):
+      - `agregar`: comportamiento nuevo. En una capability que todavía no existe, la primera
+        llamada lleva `proposito`: una o dos frases, de 50 caracteres o más, sobre para qué sirve.
+      - `modificar`: comportamiento que cambia. Parte del requirement que da `simba_spec` y lleva
+        todos sus escenarios con su nombre exacto; puedes cambiar su texto y sumar escenarios. Si
+        solo agregas una preocupación nueva, usa `agregar`.
+      - `reemplazar`: retira el requirement y agrega otro con `nuevo_nombre`; es la vía para
+        quitarle un escenario. Lleva `motivo`.
+      - `retirar`: comportamiento que se retira. Lleva `motivo` y `migracion`.
+      - `renombrar`: solo cambia el nombre, con `nuevo_nombre`.
+
+      Formato:
+      - El texto de cada requirement va con SHALL o MUST y no pasa de 500 caracteres: un
+        comportamiento por requirement, y los ejemplos y los bordes van en escenarios.
+      - Cada requirement tiene al menos un escenario, con viñetas `- **WHEN** ...` y
+        `- **THEN** ...`.
+      - Un cambio sin capabilities en la propuesta no lleva deltas.
+
+      No toques `.openspec.yaml`: el motor declara `skip_specs` según haya o no deltas.
+    requires:
+      - proposal
+
+  - id: design
+    generates: design.md
+    description: Diseño técnico del cambio, solo si aplica
+    template: design.md
+    instruction: |
+      Escribe el diseño: CÓMO se implementa el cambio. Créalo solo si aplica alguna de estas:
+      - el cambio cruza varios módulos o servicios, o introduce un patrón de arquitectura nuevo;
+      - agrega una dependencia externa o cambia de forma importante el modelo de datos;
+      - tiene complejidad de seguridad, rendimiento o migración;
+      - tiene una ambigüedad que conviene resolver con decisiones técnicas antes de programar.
+      Si no aplica ninguna, no lo crees.
+
+      Secciones, las de la plantilla: **Contexto** (solo el estado actual y las restricciones que
+      explican el enfoque; remite a la propuesta para la motivación), **Objetivos / No objetivos**,
+      **Decisiones** (cada una con su razón y sus alternativas), **Riesgos / Compromisos** (en el
+      formato [riesgo] → mitigación), **Plan de migración** si aplica y **Preguntas abiertas**
+      (solo lo que se puede responder después sin cambiar las specs, el enfoque ni las tareas;
+      omítela si no hay).
+
+      Una pregunta que cambiaría las specs, el enfoque o las tareas se resuelve ahora: si no puedes,
+      entrégalo como bloqueo en vez de adivinar.
+
+      Céntrate en la arquitectura y el enfoque, no en el código línea por línea.
+    requires:
+      - proposal
+
+  - id: tasks
+    generates: tasks.md
+    description: Checklist de implementación, con cada requirement cubierto
+    template: tasks.md
+    instruction: |
+      Escribe la lista de tareas que parte la implementación en pasos.
+
+      Antes de escribirla, revisa las Preguntas abiertas del diseño, si hay: una que cambie lo que
+      se construye se resuelve primero, y no se deja como supuesto en las tareas.
+
+      **El formato es parte del contrato.** El motor lee los checkboxes para llevar el avance: una
+      caja con solo `x` cuenta como hecha, y cualquier otra marca (`- [~]`, `- []`) o una línea
+      sin caja no cuenta.
+      - Agrupa las tareas bajo encabezados `## N. Grupo`.
+      - Cada tarea es `- [ ] N.M Descripción`, en una sola línea.
+      - Las tareas son lo bastante chicas para cerrarse en una sesión, y van en orden de
+        dependencia.
+      - Cada tarea dice cómo se verifica: un test, un comando, un comportamiento observable o un
+        entregable. La verificación va en la misma línea.
+      - Cada grupo trae sus propios tests y su documentación. No los juntes en un grupo final: ese
+        solo comprueba la integración.
+      - **Cada requirement de los deltas aparece, con su nombre exacto, en al menos una tarea.** El
+        motor comprueba que ninguno quede sin tarea (ve el ejemplo).
+      - Lo que no es trabajo de implementación, como archivar el cambio, no va en las tareas.
+
+      Ejemplo:
+      ```
+      # Tasks
+
+      ## 1. Exportación
+
+      - [ ] 1.1 Implementar la exportación (Exportar los datos del usuario) y verificar que pasa su test
+      - [ ] 1.2 Documentar el formato en docs/export.md y verificar que el comando documentado corre
+      ```
+
+      Las specs dicen qué construir y el diseño, cómo.
+    requires:
+      - specs
+
+apply:
+  requires:
+    - tasks
+  tracks: tasks.md
+  instruction: |
+    Lee los archivos de contexto, haz las tareas pendientes de este lote con sus tests y márcalas
+    con `- [x]` en tasks.md a medida que las cierras. Si algo te bloquea o hace falta una decisión,
+    detente y repórtalo en la entrega.

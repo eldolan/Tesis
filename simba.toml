@@ -1,0 +1,30 @@
+# Configuración de simba, escrita por `simba init --estudio`. Solo sobrescribe los valores por
+# defecto; `simba config` muestra la configuración efectiva.
+agente = "claude"
+
+# Lo que una sesión puede correr, como prefijo: el comando de cada compuerta activa.
+comandos = ["env NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key pnpm run build"]
+
+# Las compuertas de código, en el orden en que se detectaron. Las activas pasaron en la base.
+[compuertas]
+build = ["env", "NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co", "NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key", "SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key", "pnpm", "run", "build"]
+
+[espacio]
+preparar = [
+    ["pnpm", "install", "--frozen-lockfile"],
+]
+
+# La skill del proyecto, que escribió el estudio: la reciben el corto, apply y el review.
+[extensiones.skills.verificacion]
+fuente = "ruta"
+ruta = ".config/simba/skills/verificacion"
+carga = "simba"
+
+[fases.corto]
+skills = ["verificacion"]
+
+[fases.apply]
+skills = ["verificacion"]
+
+[fases.review]
+skills = ["verificacion"]
